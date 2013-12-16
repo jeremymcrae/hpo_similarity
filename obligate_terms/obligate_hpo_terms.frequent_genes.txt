@@ -20,7 +20,7 @@ C2orf71	Abnormality of the eye	HP:0000478
 CCDC22	Abnormality of the central nervous system	HP:0002011
 LOXHD1	Abnormality of the eye	HP:0000478
 LOXHD1	Abnormality of the inner ear	HP:0000359
-LYST	Abnormality of the skin HP:0000951
+LYST	Abnormality of the skin	HP:0000951
 LYST	Abnormality of blood and blood-forming tissues	HP:0001871
 RAI1	Abnormality of the central nervous system	HP:0002011
 FANCA	Abnormality of blood and blood-forming tissues	HP:0001871
