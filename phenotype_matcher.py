@@ -21,7 +21,9 @@ import create_hpo_graph as hpo
 # load the patients HPO terms, check for matches between top genes and 
 
 USER_PATH = "/nfs/users/nfs_j/jm33/"
-HPO_PATH = os.path.join(USER_PATH, "apps", "hpo_filter", "hpo_data", "hp.obo")
+HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
+HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
+OBLIGATE_GENES_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "obligate_hpo_terms.frequent_genes")
 CANDIDATE_VARIANTS_PATH = os.path.join(USER_PATH, "clinical_reporting.txt")
 
 ddd_freeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
@@ -88,7 +90,7 @@ def main():
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
-    obligate_hpo_terms = load_files.load_obligate_terms(obligate_path)
+    obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
     
     for gene in count_genes(genes_index):
         print gene[1] + "\t" + gene[0]

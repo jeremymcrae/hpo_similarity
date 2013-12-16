@@ -1,0 +1,29 @@
+gene	phenotype	hpo_id
+FLG	Abnormality of the skin	HP:0000951 
+SYNE1	Abnormality of the central nervous system	HP:0002011
+SYNE1	Abnormality of the musculature	HP:0003011
+HSPG2	Abnormality of the skeletal system	HP:0000924
+LRP2	Abnormality of the central nervous system	HP:0002011
+LRP2	Abnormality of the eye	HP:0000478
+MYO15A	Abnormality of the inner ear	HP:0000359
+CDH23	Abnormality of the inner ear	HP:0000359
+MECP2	Abnormality of the central nervous system	HP:0002011
+ATRX	Abnormality of the central nervous system	HP:0002011
+PKHD1	Abnormality of the genitourinary system HP:0000119
+PLEC	Abnormality of the skin	HP:0000951
+PLEC	Abnormality of the musculature	HP:0003011
+DMD	Abnormality of the central nervous system	HP:0002011
+DMD	Abnormality of the musculature	HP:0003011
+ACAN	Abnormality of the skeletal system	HP:0000924
+NPHP4	Abnormality of the genitourinary system	HP:0000119
+C2orf71	Abnormality of the eye	HP:0000478
+CCDC22	Abnormality of the central nervous system	HP:0002011
+LOXHD1	Abnormality of the eye	HP:0000478
+LOXHD1	Abnormality of the inner ear	HP:0000359
+LYST	Abnormality of the skin HP:0000951
+LYST	Abnormality of blood and blood-forming tissues	HP:0001871
+RAI1	Abnormality of the central nervous system	HP:0002011
+FANCA	Abnormality of blood and blood-forming tissues	HP:0001871
+FANCA	Growth delay	HP:0001510
+PCDH19	Abnormality of the central nervous system	HP:0002011
+ALG13	Abnormality of the central nervous system	HP:0002011
