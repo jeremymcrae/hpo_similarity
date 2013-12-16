@@ -32,11 +32,11 @@ def load_ddg2p(ddg2p_path):
     genes = {}
     for line in f:
         print line, hpo_column
-        line = line.strip().split("\t")
+        line = line.split("\t")
         
         gene = line[gene_column]
         inheritance = line[inheritance_column]
-        hpo_terms = line[hpo_column]
+        hpo_terms = line[hpo_column].strip()
         
         if gene not in genes:
             genes[gene] = {}
