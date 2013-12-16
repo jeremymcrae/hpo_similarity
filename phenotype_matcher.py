@@ -64,7 +64,7 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
         for proband in probands:
-            family_terms = family_hpo_terms[proband]
+            family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
             mother_terms = family_terms.get_maternal_hpo()
             father_terms = family_terms.get_paternal_hpo()
