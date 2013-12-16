@@ -9,7 +9,7 @@ MYO15A	Abnormality of the inner ear	HP:0000359
 CDH23	Abnormality of the inner ear	HP:0000359
 MECP2	Abnormality of the central nervous system	HP:0002011
 ATRX	Abnormality of the central nervous system	HP:0002011
-PKHD1	Abnormality of the genitourinary system HP:0000119
+PKHD1	Abnormality of the genitourinary system	HP:0000119
 PLEC	Abnormality of the skin	HP:0000951
 PLEC	Abnormality of the musculature	HP:0003011
 DMD	Abnormality of the central nervous system	HP:0002011
