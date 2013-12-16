@@ -29,6 +29,54 @@ DDG2P_PATH = os.path.join(ddd_freeze, "DDG2P_with_genomic_coordinates_20131107.t
 PHENOTYPES_PATH = os.path.join(ddd_freeze, "phenotypes.shared.version.20131129.txt")
 ALTERNATE_IDS_PATH = os.path.join(ddd_freeze, "person_sanger_decipher.private.txt")
 
+def count_genes(genes_index):
+    """ count the number of times each gene was found in the candidate genes
+    
+    Args:
+        genes_index: dictionary of proband IDs and inheritance tuples indexed by gene
+    
+    Returns:
+        list of genes, sorted by number of occurences
+    """
+    
+    genes_count = []
+    for gene in genes_index:
+        genes_count.append((len(genes_index[gene]), gene))
+    
+    genes_count.sort()
+    genes_count.reverse()
+    
+    return genes_count
+
+def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
+    """ finds whether probands have an obligate HPO term given a gene that requires one
+    
+    Args:
+        family_hpos: family list, with proband HPO terms and parents HPO terms
+        genes_index: dict of genes, with proband lists as values
+        obligate_terms: obligate HPO terms indexed by gene name
+        graph: graph of hpo terms
+    """
+    
+    for gene in obligate_terms:
+        obligate_hpos = obligate_terms[gene]
+        probands = genes_index[gene]
+        for proband in probands:
+            family_terms = family_hpo_terms[proband]
+            proband_terms = family_terms.get_child_hpo()
+            mother_terms = family_terms.get_maternal_hpo()
+            father_terms = family_terms.get_paternal_hpo()
+            
+            for obligate_term in obligate_terms[gene]:
+                subterms = nx.dfs_successors(graph, obligate_term)
+                for proband_term in proband_terms:
+                    if proband_term == obligate_term:
+                        print "True"
+                    elif proband_term is in subterms:
+                        print "True"
+            
+            
+            
 
 def main():
     # build a graph of DDG2P terms, so we can trace paths between terms
@@ -37,15 +85,12 @@ def main():
     
     # load gene HPO terms, proband HPO terms, and HPO terms from candidate variants
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
-    proband_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
+    family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    obligate_hpo_terms = load_files.load_obligate_terms(obligate_path)
     
-    genes_count = []
-    for gene in genes_index:
-        genes_count.append((len(genes_index[gene]), gene))
-    
-    genes_count.sort()
-    print genes_count
+    print count_genes(genes_index)
+    check_for_obligate_terms(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
     
     # nx.draw(g)
     # plt.savefig("test.png")

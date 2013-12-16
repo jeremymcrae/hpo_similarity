@@ -50,6 +50,7 @@ def load_ddg2p(ddg2p_path):
     
     return genes
 
+
 class familyHPO(object):
     """small class to handle HPO terms for family members of a trio
     """
@@ -95,6 +96,7 @@ class familyHPO(object):
     
     def get_paternal_hpo(self):
         return self.paternal_hpo
+
 
 def load_participants_hpo_terms(pheno_path, alt_id_path):
     """ loads patient data, and obtains
@@ -186,13 +188,35 @@ def load_candidate_genes(candidate_genes_path):
         probands_index[proband_ID].add((gene, inheritance))
     
     return genes_index, probands_index
+
+def load_obligate_terms(obligate_path):
+    """ loads a list of HPO terms for specific genes that affected people must have
+    """
+    
+    f = open(obligate_path)
+    
+    # pull out the column numbers from th header
+    header = f.readline().strip().split("\t")
+    gene_label = "gene"
+    hpo_label = "hpo_id"
+    gene_column = header.index(gene_label)
+    hpo_column = header.index(hpo_label)
+    
+    obligate_genes = {}
+    for line in f:
+        line = line.strip().split("\t")
+        gene = line[gene_column]
+        hpo_term = line[hpo_column]
         
+        if gene not in obligate_genes:
+            obligate_genes[gene] = []
+        
+        olbligate_genes[gene].append(hpo_term)
     
+    return obligate_genes
     
 
 
 
 
 
-
-    
