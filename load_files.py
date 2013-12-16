@@ -211,7 +211,7 @@ def load_obligate_terms(obligate_path):
         if gene not in obligate_genes:
             obligate_genes[gene] = []
         
-        olbligate_genes[gene].append(hpo_term)
+        obligate_genes[gene].append(hpo_term)
     
     return obligate_genes
     
