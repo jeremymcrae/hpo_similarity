@@ -106,6 +106,7 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     alt_ids = {}
     f = open(alt_id_path)
     for line in f:
+        line = line.split("\t")
         ref_id = line[0]
         alt_id = line[1]
         if ":" in alt_id:
@@ -133,6 +134,7 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     
     participant_hpo = {}
     for line in f:
+        line = line.split("\t")
         proband_id = line[proband_column]
         child_hpo = line[child_hpo_column]
         maternal_hpo = line[maternal_hpo_column]

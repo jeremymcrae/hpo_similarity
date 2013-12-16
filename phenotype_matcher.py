@@ -8,6 +8,7 @@
 #    HPO (http://compbio.charite.de/hudson/job/hpo/ or http://www.human-phenotype-ontology.org/)
 #    DDG2P
 
+import networkx as nx
 import os
 import matplotlib as plt
 
