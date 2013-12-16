@@ -69,10 +69,11 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
             
             for obligate_term in obligate_terms[gene]:
                 subterms = nx.dfs_successors(graph, obligate_term)
+                print subterms
                 for proband_term in proband_terms:
                     if proband_term == obligate_term:
                         print "True"
-                    elif proband_term is in subterms:
+                    elif proband_term in subterms:
                         print "True"
             
             
@@ -89,7 +90,8 @@ def main():
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     obligate_hpo_terms = load_files.load_obligate_terms(obligate_path)
     
-    print count_genes(genes_index)
+    for gene in count_genes(genes_index):
+        print gene[1] + "\t" + gene[0]
     check_for_obligate_terms(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
     
     # nx.draw(g)
