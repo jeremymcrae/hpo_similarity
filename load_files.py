@@ -31,6 +31,7 @@ def load_ddg2p(ddg2p_path):
     
     genes = {}
     for line in f:
+        print line, hpo_column
         line = line.strip().split("\t")
         
         gene = line[gene_column]
@@ -167,6 +168,9 @@ def load_candidate_genes(candidate_genes_path):
     probands_index = {}
     
     for line in f:
+        # ignore blank lines
+        if line == "\n":
+            continue
         line = line.strip().split("\t")
         proband_ID = line[proband_column]
         gene = line[gene_column]
