@@ -170,6 +170,7 @@ def load_candidate_genes(candidate_genes_path):
         # ignore blank lines
         if line == "\n":
             continue
+        
         line = line.strip().split("\t")
         proband_ID = line[proband_column]
         gene = line[gene_column]
@@ -179,7 +180,7 @@ def load_candidate_genes(candidate_genes_path):
             genes_index[gene] = set()
             
         if proband_ID not in probands_index:
-            probands_index = set()
+            probands_index[proband_ID] = set()
         
         genes_index[gene].add((proband_ID, inheritance))
         probands_index[proband_ID].add((gene, inheritance))
