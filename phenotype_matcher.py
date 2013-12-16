@@ -40,6 +40,13 @@ def main():
     proband_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     
+    genes_count = []
+    for gene in genes_index:
+        genes_count.append((len(genes_index[gene]), gene))
+    
+    genes_count.sort()
+    print genes_count
+    
     # nx.draw(g)
     # plt.savefig("test.png")
 
