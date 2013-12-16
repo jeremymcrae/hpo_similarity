@@ -181,8 +181,8 @@ def load_candidate_genes(candidate_genes_path):
         if proband_ID not in probands_index:
             probands_index = set()
         
-        genes_index[gene].update((proband_ID, inheritance))
-        probands_index[proband_ID].update((gene, inheritance))
+        genes_index[gene].add((proband_ID, inheritance))
+        probands_index[proband_ID].add((gene, inheritance))
     
     return genes_index, probands_index
         
