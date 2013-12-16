@@ -205,7 +205,6 @@ def load_obligate_terms(obligate_path):
     obligate_genes = {}
     for line in f:
         line = line.strip().split("\t")
-        print line
         gene = line[gene_column]
         hpo_term = line[hpo_column]
         

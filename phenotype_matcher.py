@@ -93,7 +93,7 @@ def main():
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
     
     for gene in count_genes(genes_index):
-        print gene[1] + "\t" + gene[0]
+        print str(gene[1]) + "\t" + str(gene[0])
     check_for_obligate_terms(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
     
     # nx.draw(g)
