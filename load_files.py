@@ -115,13 +115,13 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "type" in header:
+    if "decipher_id" in header:
         proband_label = "decipher_id"
         child_hpo_label = "child_hpo"
         maternal_hpo_label = "maternal_hpo"
         paternal_hpo_label = "paternal_hpo"
     else:
-        raise ValueError("The gene file lacks expected header column names")
+        raise ValueError("The phenotype file lacks expected header column names")
     
     # get the positions of the columns in the list of header labels
     proband_column = header.index(proband_label)
@@ -152,12 +152,12 @@ def load_candidate_genes(candidate_genes_path):
     
      # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "type" in header:
+    if "proband" in header:
         proband_label = "proband"
-        gene_label = "gene_hpo"
-        inheritance_label = "inheritance_hpo"
+        gene_label = "gene"
+        inheritance_label = "inheritance"
     else:
-        raise ValueError("The gene file lacks expected header column names")
+        raise ValueError("The variant file lacks expected header column names")
     
     proband_column = header.index(proband_label)
     gene_column = header.index(gene_label)
