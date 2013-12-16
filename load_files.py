@@ -31,7 +31,6 @@ def load_ddg2p(ddg2p_path):
     
     genes = {}
     for line in f:
-        print line, hpo_column
         line = line.split("\t")
         
         gene = line[gene_column]

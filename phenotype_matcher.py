@@ -27,7 +27,7 @@ CANDIDATE_VARIANTS_PATH = os.path.join(USER_PATH, "clinical_reporting.txt")
 
 ddd_freeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
 DDG2P_PATH = os.path.join(ddd_freeze, "DDG2P_with_genomic_coordinates_20131107.tsv")
-PHENOTYPES_PATH = os.path.join(ddd_freeze, "phenotypes.shared.20131129.txt")
+PHENOTYPES_PATH = os.path.join(ddd_freeze, "phenotypes.shared.version.20131129.txt")
 ALTERNATE_IDS_PATH = os.path.join(ddd_freeze, "person_sanger_decipher.private.txt")
 
 class loadHPONetwork(object):
