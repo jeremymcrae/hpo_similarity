@@ -67,7 +67,7 @@ class familyHPO(object):
         self.maternal_hpo = self.format_hpo(maternal_hpo)
         self.paternal_hpo = self.format_hpo(paternal_hpo)
     
-    def format_hpo(hpo_terms):
+    def format_hpo(self, hpo_terms):
         """ formats a string of hpo terms to a list
         
         Args:
