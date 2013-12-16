@@ -23,7 +23,7 @@ import create_hpo_graph as hpo
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
 HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
-OBLIGATE_GENES_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "obligate_hpo_terms.frequent_genes")
+OBLIGATE_GENES_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "obligate_hpo_terms.frequent_genes.txt")
 CANDIDATE_VARIANTS_PATH = os.path.join(USER_PATH, "clinical_reporting.txt")
 
 ddd_freeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
