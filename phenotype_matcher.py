@@ -174,7 +174,7 @@ def main():
     
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
     proband_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
-    genes_index, probands_index = load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     
     # nx.draw(g)
     # plt.savefig("test.png")
