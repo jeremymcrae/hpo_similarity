@@ -99,7 +99,7 @@ class loadHPONetwork(object):
                 
                 self.ref_mapper[node_id].append(alt_id)
 
-    def check_if_obsolete(obo_tags):
+    def check_if_obsolete(self, obo_tags):
         """ checks if an "is_obsolete" flag is in the tags for an obo entry
         
         Args:
