@@ -55,7 +55,7 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
     
     Args:
         family_hpos: family list, with proband HPO terms and parents HPO terms
-        genes_index: dict of genes, with proband lists as values
+        genes_index: dict of genes, with proband and inheritance tuple lists as values
         obligate_terms: obligate HPO terms indexed by gene name
         graph: graph of hpo terms
     """
@@ -64,6 +64,7 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
         for proband in probands:
+            proband = proband[0]
             family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
             mother_terms = family_terms.get_maternal_hpo()
