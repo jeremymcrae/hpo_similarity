@@ -130,7 +130,7 @@ class loadHPONetwork(object):
         
         # add the hpo header values as attributes for the graph
         for header_id in hpo_header:
-            g.graph[header_id] = hpo_header[header_id]
+            self.g.graph[header_id] = hpo_header[header_id]
         
         # track alternate HPO IDs (since we use HPO IDs as node IDs)
         self.alt_id_mapper = {}
@@ -165,9 +165,7 @@ class loadHPONetwork(object):
             return self.g
         except AttributeError:
             return None
-            
 
-    
 
 def main():
     # build a graph of DDG2P terms, so we can trace paths between terms
