@@ -121,6 +121,10 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
     
     hpo_matches = {}
     for gene in obligate_terms:
+        # don't bother to check genes that don't occur in the prbands
+        if gene not in genes_index:
+            continue
+        
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
         
@@ -141,20 +145,69 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
                     if proband_term == obligate_term:
                         has_obligate = True
                         break
-                    elif proband_term in alt_subterms:
+                    elif proband_term in subterms:
                         has_obligate = True
                         break
             
             if has_obligate:
                 if proband not in hpo_matches:
-                    hpo_matches = []
+                    hpo_matches[proband] = []
                 hpo_matches[proband].append(gene)
             
             # if set(subterms) != set(alt_subterms):
             #     plot_subgraph(graph, subterms, alt_subterms)
     
     return hpo_matches
+
+def annotate_clinical_report(path, matches, searched_genes, column_label):
+    """
+    """
     
+    f = open(path)
+    header = f.readline().strip().split("\t")
+    proband_label = "proband"
+    gene_label = "gene"
+    proband_column = header.index(proband_label)
+    gene_column = header.index(gene_label)
+    
+    header.append(column_label + "_searched")
+    header.append(column_label + "_passed")
+    header = "\t".join(header) + "\n"
+    
+    parsed_lines = [header]
+    for line in f:
+        if line == "\n":
+            parsed_lines.append(line)
+            continue
+        
+        line = line.strip().split("\t")
+        proband = line[proband_column]
+        gene = line[gene_column]
+        
+        searched = "not_checked"
+        if gene in searched_genes:
+            searched = "gene_checked"
+        
+        if searched == "not_checked":
+            matched = "NA"
+        else:
+            matched = "FAIL"
+        
+        if proband in matches:
+            if gene in matches[proband]:
+                matched = "PASS"
+        
+        line.append(searched)
+        line.append(matched)
+        
+        line = "\t".join(line) + "\n"
+        parsed_lines.append(line)
+    
+    f.close()
+    
+    output = open(path, "w")
+    output.writelines(parsed_lines)
+    output.close()
 
 def main():
     # build a graph of DDG2P terms, so we can trace paths between terms
@@ -166,12 +219,15 @@ def main():
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
-    ddg2P_hpo_organ_terms = load_organ_terms(ORGAN_TO_HPO_MAPPER_PATH, DDG2P_ORGAN_PATH)
+    ddg2p_hpo_organ_terms = load_files.load_organ_terms(ORGAN_TO_HPO_MAPPER_PATH, DDG2P_ORGAN_PATH)
     
     # for gene in count_genes(genes_index):
     #     print str(gene[1]) + "\t" + str(gene[0])
-    # obligate_matches = check_for_hpo_matches(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
-    # ddg2p_organ_matches = check_for_hpo_matches(family_hpo_terms, genes_index, ddg2P_hpo_organ_terms, graph)
+    obligate_matches = check_for_hpo_matches(family_hpo_terms, genes_index, obligate_hpo_terms, graph,)
+    ddg2p_organ_matches = check_for_hpo_matches(family_hpo_terms, genes_index, ddg2p_hpo_organ_terms, graph)
+    
+    annotate_clinical_report(CANDIDATE_VARIANTS_PATH, obligate_matches, obligate_hpo_terms, "obligate_terms")
+    annotate_clinical_report(CANDIDATE_VARIANTS_PATH, ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
     
     # nx.draw(g)
     # plt.savefig("test.png")
