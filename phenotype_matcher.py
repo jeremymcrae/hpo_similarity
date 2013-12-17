@@ -64,23 +64,28 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
     for gene in obligate_terms:
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
+        has_obligate = False   
         for proband in probands:
             proband = proband[0]
             family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
-            mother_terms = family_terms.get_maternal_hpo()
-            father_terms = family_terms.get_paternal_hpo()
+            # mother_terms = family_terms.get_maternal_hpo()
+            # father_terms = family_terms.get_paternal_hpo()
             
             for obligate_term in obligate_terms[gene]:
                 subterms = nx.dfs_successors(graph, obligate_term)
-                print subterms
+                # print subterms
                 for proband_term in proband_terms:
                     if proband_term == obligate_term:
-                        print "True"
+                        has_obligate = True
+                        break
                     elif proband_term in subterms:
-                        print "True"
-            
-            
+                        has_obligate = True
+                        break
+        # print subterms
+        if has_obligate:
+            print proband
+            print proband_term, obligate_term, subterms
             
 
 def main():
