@@ -231,7 +231,7 @@ def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
     """
     
     f = open(organ_to_hpo_mapper_path)
-    header = f.readline().strip.split("\t")
+    header = f.readline().strip().split("\t")
     organ_label = "organ"
     hpo_label = "hpo_id"
     organ_column = header.index(organ_label)
@@ -242,13 +242,13 @@ def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
     for line in f:
         line = line.strip().split("\t")
         organ = line[organ_column]
-        hpo_id = line[hpo_column]
+        hpo_term = line[hpo_column]
         
-        organ_map[organ] = hpo_id
+        organ_map[organ] = hpo_term
     
     # now open the list of ddg2p genes with their suggested organs
     f = open(ddg2p_organ_path)
-    header = f.readline().strip.split("\t")
+    header = f.readline().strip().split("\t")
     gene_label = "gene"
     organ_label = "organ"
     gene_column = header.index(gene_label)
@@ -263,7 +263,7 @@ def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
         if organ in organ_map:
             hpo_term = organ_map[organ]
         else:
-            sys.exit("Unknown organ for DDG2P gene: " + organ)
+            sys.exit("Unknown organ for DDG2P gene: " + gene + ", in: " + organ)
         
         if gene not in obligate_organs:
             obligate_organs[gene] = []
