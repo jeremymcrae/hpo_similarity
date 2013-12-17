@@ -8,9 +8,11 @@
 #    HPO (http://compbio.charite.de/hudson/job/hpo/ or http://www.human-phenotype-ontology.org/)
 #    DDG2P
 
+import matplotlib as plt
+plt.use("Agg")
 import networkx as nx
 import os
-import matplotlib as plt
+import sys
 
 import load_files
 import create_hpo_graph as hpo
@@ -25,6 +27,8 @@ USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
 HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
 OBLIGATE_GENES_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "obligate_hpo_terms.frequent_genes.txt")
+ORGAN_TO_HPO_MAPPER_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "ddg2p_organ_code_to_hpo_term.txt")
+DDG2P_ORGAN_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "ddg2p_organ_specificity.txt")
 CANDIDATE_VARIANTS_PATH = os.path.join(USER_PATH, "clinical_reporting.txt")
 
 ddd_freeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
@@ -51,47 +55,106 @@ def count_genes(genes_index):
     
     return genes_count
 
-def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
-    """ finds whether probands have an obligate HPO term given a gene that requires one
+def plot_subgraph(graph, subterms, alt_subterms):
+    """ plots a subgraph to compares node from different lists
+    """
+    
+    # find which nodes are in both sets
+    subterms = set(subterms)
+    alt_subterms = set(alt_subterms)
+    intersection = subterms & alt_subterms
+    union = subterms | alt_subterms
+    
+    # find the terms in each set that are not in both
+    diff_subterms = subterms - intersection
+    diff_alt_subterms = alt_subterms - intersection
+   
+    subgraph = graph.subgraph(union)
+    subnodes = subgraph.nodes()
+    
+    cols = []
+    sizes = []
+    for node in subnodes:
+        if node in intersection:
+            color = "black"
+            size = 5
+        elif node in diff_subterms:
+            color = "blue"
+            size = 50
+        elif node in diff_alt_subterms:
+            color = "red"
+            size = 50
+        else:
+            sys.exit("node not in a defined set!")
+        colors.append(color)
+        sizes.append(size)
+    
+    nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
+    plt.pyplot.savefig("test.pdf")
+
+def find_descendants(graph, start_node):
+    """ recursively find all the descendants of a node
+    """
+    
+    if len(graph.successors(start_node)) == 0:
+        return [start_node]
+    else:
+        successors = graph.successors(start_node)
+        downstream = []
+        for node in successors:
+            downstream += find_descendants(graph, node)
+        return [start_node] + successors + downstream
+
+def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
+    """ finds whether probands have an obligate HPO term for a gene
     
     Args:
         family_hpos: family list, with proband HPO terms and parents HPO terms
-        genes_index: dict of genes, with proband and inheritance tuple lists as values
+        genes_index: dict of genes, listing proband and inheritance tuples
         obligate_terms: obligate HPO terms indexed by gene name
         graph: graph of hpo terms
+    
+    Returns:
+        probands with hpo terms that match terms for certain genes as a dict 
+        of gene lists indexed by proband ID
     """
     
+    hpo_matches = {}
     for gene in obligate_terms:
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
-        has_obligate = False   
-        # for proband in probands:
-        for proband in ["DDDP111162"]:
+        
+        for proband in probands:
+            has_obligate = False
             proband = proband[0]
+            
             family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
             # mother_terms = family_terms.get_maternal_hpo()
             # father_terms = family_terms.get_paternal_hpo()
             
             for obligate_term in obligate_terms[gene]:
-                subterms = nx.dfs_successors(graph, obligate_term)
-                # print subterms
+                # subterms = nx.dfs_successors(graph, obligate_term)
+                subterms = find_descendants(graph, obligate_term)
+                
                 for proband_term in proband_terms:
                     if proband_term == obligate_term:
                         has_obligate = True
                         break
-                    elif proband_term in subterms:
+                    elif proband_term in alt_subterms:
                         has_obligate = True
                         break
-        # print subterms
-        if has_obligate:
-            print proband
-            print proband_term, obligate_term, subterms
-        
-        subgraph = graph.subgraph(subterms.keys())
-        nx.draw(subgraph)
-        nx.show()
             
+            if has_obligate:
+                if proband not in hpo_matches:
+                    hpo_matches = []
+                hpo_matches[proband].append(gene)
+            
+            # if set(subterms) != set(alt_subterms):
+            #     plot_subgraph(graph, subterms, alt_subterms)
+    
+    return hpo_matches
+    
 
 def main():
     # build a graph of DDG2P terms, so we can trace paths between terms
@@ -103,10 +166,12 @@ def main():
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
+    ddg2P_hpo_organ_terms = load_organ_terms(ORGAN_TO_HPO_MAPPER_PATH, DDG2P_ORGAN_PATH)
     
     # for gene in count_genes(genes_index):
     #     print str(gene[1]) + "\t" + str(gene[0])
-    check_for_obligate_terms(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
+    # obligate_matches = check_for_hpo_matches(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
+    # ddg2p_organ_matches = check_for_hpo_matches(family_hpo_terms, genes_index, ddg2P_hpo_organ_terms, graph)
     
     # nx.draw(g)
     # plt.savefig("test.png")

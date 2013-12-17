@@ -1,6 +1,8 @@
 """ simple functions to load and parse data for HPO terms analyses
 """
 
+import sys
+
 def load_ddg2p(ddg2p_path):
     """ load a DDG2P gene file, so we can extract HPO terms for each gene
     
@@ -217,7 +219,60 @@ def load_obligate_terms(obligate_path):
     
     return obligate_genes
     
-
+def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
+    """ loads dict of hpo terms specific for DDG2P genes
+    
+    Args:
+        organ_to_hpo_mapper_path: path to file listing HPO terms for abnormality for each organ
+        ddg2p_organ_path: path to file listing organ abnormalities for ddg2p genes
+    
+    Returns:
+        dictionary of hpo lists indexed by gene
+    """
+    
+    f = open(organ_to_hpo_mapper_path)
+    header = f.readline().strip.split("\t")
+    organ_label = "organ"
+    hpo_label = "hpo_id"
+    organ_column = header.index(organ_label)
+    hpo_column = header.index(hpo_label)
+    
+    # pull out the hpo terms that match organ labels
+    organ_map = {}
+    for line in f:
+        line = line.strip().split("\t")
+        organ = line[organ_column]
+        hpo_id = line[hpo_column]
+        
+        organ_map[organ] = hpo_id
+    
+    # now open the list of ddg2p genes with their suggested organs
+    f = open(ddg2p_organ_path)
+    header = f.readline().strip.split("\t")
+    gene_label = "gene"
+    organ_label = "organ"
+    gene_column = header.index(gene_label)
+    organ_column = header.index(organ_label)
+    
+    obligate_organs = {}
+    for line in f:
+        line = line.strip().split("\t")
+        gene = line[gene_column]
+        organ = line[organ_column]
+        
+        if organ in organ_map:
+            hpo_term = organ_map[organ]
+        else:
+            sys.exit("Unknown organ for DDG2P gene: " + organ)
+        
+        if gene not in obligate_organs:
+            obligate_organs[gene] = []
+        
+        obligate_organs[gene].append(hpo_term)
+    
+    return obligate_organs
+        
+    
 
 
 
