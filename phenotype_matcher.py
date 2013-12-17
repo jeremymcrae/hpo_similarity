@@ -65,7 +65,8 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
         obligate_hpos = obligate_terms[gene]
         probands = genes_index[gene]
         has_obligate = False   
-        for proband in probands:
+        # for proband in probands:
+        for proband in ["DDDP111162"]:
             proband = proband[0]
             family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
@@ -86,6 +87,10 @@ def check_for_obligate_terms(family_hpos, genes_index, obligate_terms, graph):
         if has_obligate:
             print proband
             print proband_term, obligate_term, subterms
+        
+        subgraph = graph.subgraph(subterms.keys())
+        nx.draw(subgraph)
+        nx.show()
             
 
 def main():
@@ -99,8 +104,8 @@ def main():
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
     
-    for gene in count_genes(genes_index):
-        print str(gene[1]) + "\t" + str(gene[0])
+    # for gene in count_genes(genes_index):
+    #     print str(gene[1]) + "\t" + str(gene[0])
     check_for_obligate_terms(family_hpo_terms, genes_index, obligate_hpo_terms, graph)
     
     # nx.draw(g)
