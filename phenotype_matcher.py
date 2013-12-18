@@ -92,7 +92,7 @@ def plot_compare_sets(graph, subterms, alt_subterms):
     nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
     plt.pyplot.savefig("test.pdf")
 
-def plot_compare_sets(subgraph, top_term, found_term):
+def plot_subgraph(subgraph, top_term, found_term):
     """ plots a subgraph to compares node from different lists
     """
     
@@ -111,7 +111,7 @@ def plot_compare_sets(subgraph, top_term, found_term):
         else:
             color = "gray"
             size = 10
-        colors.append(color)
+        cols.append(color)
         sizes.append(size)
     
     labels = {}
@@ -184,7 +184,7 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
             
             if has_obligate:
                 subgraph = graph.subgraph(subterms)
-                plot_compare_sets(subgraph, obligate_term, proband_term)
+                plot_subgraph(subgraph, obligate_term, proband_term)
                 sys.exit()
                 
                 if proband not in hpo_matches:
