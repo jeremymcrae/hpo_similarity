@@ -118,8 +118,9 @@ def plot_subgraph(subgraph, top_term, found_term):
     labels[top_term] = top_term
     labels[found_term] = found_term
     
-    nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
-    nx.draw_networkx_labels(subgraph, labels=labels, font_size=12, font_color="red")
+    pos = circular_layout(subgraph)
+    nx.draw(subgraph, pos=pos, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
+    nx.draw_networkx_labels(subgraph, pos=pos, labels=labels, font_size=12, font_color="red")
     plt.pyplot.savefig("test.pdf")
 
 def find_descendants(graph, start_node):
