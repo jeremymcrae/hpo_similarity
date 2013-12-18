@@ -55,7 +55,7 @@ def count_genes(genes_index):
     
     return genes_count
 
-def plot_subgraph(graph, subterms, alt_subterms):
+def plot_compare_sets(graph, subterms, alt_subterms):
     """ plots a subgraph to compares node from different lists
     """
     
@@ -90,6 +90,36 @@ def plot_subgraph(graph, subterms, alt_subterms):
         sizes.append(size)
     
     nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
+    plt.pyplot.savefig("test.pdf")
+
+def plot_compare_sets(subgraph, top_term, found_term):
+    """ plots a subgraph to compares node from different lists
+    """
+    
+    # find which nodes are in both sets
+    subnodes = subgraph.nodes()
+    
+    cols = []
+    sizes = []
+    for node in subnodes:
+        if node is top_term:
+            color = "blue"
+            size = 50
+        elif node is found_term:
+            color = "red"
+            size = 50
+        else:
+            color = "gray"
+            size = 10
+        colors.append(color)
+        sizes.append(size)
+    
+    labels = {}
+    labels[top_term] = top_term
+    labels[found_term] = found_term
+    
+    nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
+    nx.draw_networkx_labels(subgraph, labels=labels, font_size=12, font_color="red")
     plt.pyplot.savefig("test.pdf")
 
 def find_descendants(graph, start_node):
@@ -133,13 +163,11 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
             has_obligate = False
             proband = proband[0]
             
+            # pull out the terms used for the proband
             family_terms = family_hpos[proband]
             proband_terms = family_terms.get_child_hpo()
-            # mother_terms = family_terms.get_maternal_hpo()
-            # father_terms = family_terms.get_paternal_hpo()
             
             for obligate_term in obligate_terms[gene]:
-                # subterms = nx.dfs_successors(graph, obligate_term)
                 if obligate_term in cached_subterms:
                     subterms = cached_subterms[obligate_term]
                 else:
@@ -155,17 +183,28 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
                         break
             
             if has_obligate:
+                subgraph = graph.subgraph(subterms)
+                plot_compare_sets(subgraph, obligate_term, proband_term)
+                sys.exit()
+                
                 if proband not in hpo_matches:
                     hpo_matches[proband] = []
                 hpo_matches[proband].append(gene)
             
             # if set(subterms) != set(alt_subterms):
-            #     plot_subgraph(graph, subterms, alt_subterms)
+            #     plot_compare_sets(graph, subterms, alt_subterms)
     
     return hpo_matches
 
-def annotate_clinical_report(path, matches, searched_genes, column_label):
-    """
+def add_matches_to_report(path, matches, searched_genes, column_label):
+    """ annotates a file of candidate variants using dicts of proband matches indexed by gene
+    
+    Args:
+        path: path to file listing variants for each proband
+        matches: fict of probands that were matched for each gene
+        searched_genes: list of searched genes, so we can add whether a gene 
+            was not found because it was not searched for
+        column_label: label to use in the file header
     """
     
     f = open(path)
@@ -231,8 +270,8 @@ def main():
     obligate_matches = check_for_hpo_matches(family_hpo_terms, genes_index, obligate_hpo_terms, graph,)
     ddg2p_organ_matches = check_for_hpo_matches(family_hpo_terms, genes_index, ddg2p_hpo_organ_terms, graph)
     
-    annotate_clinical_report(CANDIDATE_VARIANTS_PATH, obligate_matches, obligate_hpo_terms, "obligate_terms")
-    annotate_clinical_report(CANDIDATE_VARIANTS_PATH, ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
+    add_matches_to_report(CANDIDATE_VARIANTS_PATH, obligate_matches, obligate_hpo_terms, "obligate_terms")
+    add_matches_to_report(CANDIDATE_VARIANTS_PATH, ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
     
     # nx.draw(g)
     # plt.savefig("test.png")
