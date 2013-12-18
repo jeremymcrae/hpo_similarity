@@ -120,6 +120,7 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
     """
     
     hpo_matches = {}
+    cached_subterms = {}
     for gene in obligate_terms:
         # don't bother to check genes that don't occur in the prbands
         if gene not in genes_index:
@@ -139,7 +140,11 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
             
             for obligate_term in obligate_terms[gene]:
                 # subterms = nx.dfs_successors(graph, obligate_term)
-                subterms = find_descendants(graph, obligate_term)
+                if obligate_term in cached_subterms:
+                    subterms = cached_subterms[obligate_term]
+                else:
+                    subterms = find_descendants(graph, obligate_term)
+                    cached_subterms[obligate_term] = subterms
                 
                 for proband_term in proband_terms:
                     if proband_term == obligate_term:
