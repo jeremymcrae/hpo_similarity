@@ -64,7 +64,7 @@ class checkHPOMatches(object):
                         break
                 
                 if has_obligate:
-                    subgraph = graph.subgraph(subterms)
+                    subgraph = self.graph.subgraph(subterms)
                     self.plot_subgraph(subgraph, obligate_term, proband_term)
                     
                     if proband not in hpo_matches:
