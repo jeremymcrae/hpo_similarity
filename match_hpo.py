@@ -170,4 +170,5 @@ class checkHPOMatches(object):
         nx.draw_networkx_labels(graph, pos=pos, labels=labels, font_size=10, \
                                 font_color="red")
         plt.pyplot.savefig("test.pdf")
+        sys.exit("exited after plotting graph")
 
