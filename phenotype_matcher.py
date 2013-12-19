@@ -56,7 +56,7 @@ def count_genes(genes_index):
     return genes_count
 
 def plot_compare_sets(graph, subterms, alt_subterms):
-    """ plots a subgraph to compares node from different lists
+    """ plots a subgraph to compare nodes from different lists
     """
     
     # find which nodes are in both sets
@@ -92,25 +92,25 @@ def plot_compare_sets(graph, subterms, alt_subterms):
     nx.draw(subgraph, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
     plt.pyplot.savefig("test.pdf")
 
-def plot_subgraph(subgraph, top_term, found_term):
-    """ plots a subgraph to compares node from different lists
+def plot_subgraph(graph, top_term, found_term):
+    """ plots a subgraph to compare nodes from different lists
     """
     
-    # find which nodes are in both sets
-    subnodes = subgraph.nodes()
+    # find which nodes are in the subgraph
+    nodes = graph.nodes()
     
     cols = []
     sizes = []
-    for node in subnodes:
-        if node is top_term:
+    for node in nodes:
+        if node == top_term:
             color = "blue"
-            size = 50
-        elif node is found_term:
+            size = 200
+        elif node == found_term:
+            color = "green"
+            size = 200
+        else:
             color = "red"
             size = 50
-        else:
-            color = "gray"
-            size = 10
         cols.append(color)
         sizes.append(size)
     
@@ -118,9 +118,12 @@ def plot_subgraph(subgraph, top_term, found_term):
     labels[top_term] = top_term
     labels[found_term] = found_term
     
-    pos = circular_layout(subgraph)
-    nx.draw(subgraph, pos=pos, with_labels=False, width=0.5, node_color=cols, node_size=sizes, alpha=0.5)
-    nx.draw_networkx_labels(subgraph, pos=pos, labels=labels, font_size=12, font_color="red")
+    pos = nx.spectral_layout(graph)
+    nx.draw_networkx(graph, pos=pos, nodelist=nodes, with_labels=False, \
+                           width=0.01, node_color=cols, node_size=sizes, \
+                           alpha=0.2)
+    nx.draw_networkx_labels(graph, pos=pos, labels=labels, font_size=10, \
+                            font_color="red")
     plt.pyplot.savefig("test.pdf")
 
 def find_descendants(graph, start_node):
@@ -153,7 +156,7 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
     hpo_matches = {}
     cached_subterms = {}
     for gene in obligate_terms:
-        # don't bother to check genes that don't occur in the prbands
+        # don't bother to check genes that don't occur in the probands
         if gene not in genes_index:
             continue
         
@@ -172,21 +175,23 @@ def check_for_hpo_matches(family_hpos, genes_index, obligate_terms, graph):
                 if obligate_term in cached_subterms:
                     subterms = cached_subterms[obligate_term]
                 else:
-                    subterms = find_descendants(graph, obligate_term)
+                    subterms = nx.dfs_successors(graph, obligate_term)
+                    successor_list = subterms.values()
+                    subterms = set([item for sublist in successor_list for item in sublist])
+                    subterms.add(obligate_term)
                     cached_subterms[obligate_term] = subterms
                 
                 for proband_term in proband_terms:
-                    if proband_term == obligate_term:
+                    if proband_term in subterms:
                         has_obligate = True
                         break
-                    elif proband_term in subterms:
-                        has_obligate = True
-                        break
+                
+                if has_obligate:
+                    break
             
             if has_obligate:
-                subgraph = graph.subgraph(subterms)
-                plot_subgraph(subgraph, obligate_term, proband_term)
-                sys.exit()
+                # subgraph = graph.subgraph(subterms)
+                # plot_subgraph(subgraph, obligate_term, proband_term)
                 
                 if proband not in hpo_matches:
                     hpo_matches[proband] = []
@@ -259,23 +264,27 @@ def main():
     hpo_file = hpo.loadHPONetwork(HPO_PATH)
     graph = hpo_file.get_graph()
     
-    # load gene HPO terms, proband HPO terms, and HPO terms from candidate variants
+    # load gene HPO terms, proband HPO terms, probands with candidates in these genes
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
-    genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    genes_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    
+    # load hpo terms that are required for specific genes
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
     ddg2p_hpo_organ_terms = load_files.load_organ_terms(ORGAN_TO_HPO_MAPPER_PATH, DDG2P_ORGAN_PATH)
     
+    # # report the number of probands found for each gene
     # for gene in count_genes(genes_index):
     #     print str(gene[1]) + "\t" + str(gene[0])
+    
+    # find the probands that have hpo terms that match the terms required for certain genes
     obligate_matches = check_for_hpo_matches(family_hpo_terms, genes_index, obligate_hpo_terms, graph,)
     ddg2p_organ_matches = check_for_hpo_matches(family_hpo_terms, genes_index, ddg2p_hpo_organ_terms, graph)
     
+    # add the gene matches to the reporting file
     add_matches_to_report(CANDIDATE_VARIANTS_PATH, obligate_matches, obligate_hpo_terms, "obligate_terms")
     add_matches_to_report(CANDIDATE_VARIANTS_PATH, ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
     
-    # nx.draw(g)
-    # plt.savefig("test.png")
 
 if __name__ == '__main__':
     main()

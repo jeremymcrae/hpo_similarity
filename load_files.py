@@ -151,7 +151,7 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     return participant_hpo
 
 def load_candidate_genes(candidate_genes_path):
-    """ loads a list of candidate genes for the participants
+    """ loads candidate genes for the participants
     """
     
     f = open(candidate_genes_path)
@@ -170,7 +170,6 @@ def load_candidate_genes(candidate_genes_path):
     inheritance_column = header.index(inheritance_label)
     
     genes_index = {}
-    probands_index = {}
     
     for line in f:
         # ignore blank lines
@@ -184,14 +183,10 @@ def load_candidate_genes(candidate_genes_path):
         
         if gene not in genes_index:
             genes_index[gene] = set()
-            
-        if proband_ID not in probands_index:
-            probands_index[proband_ID] = set()
-        
+         
         genes_index[gene].add((proband_ID, inheritance))
-        probands_index[proband_ID].add((gene, inheritance))
     
-    return genes_index, probands_index
+    return genes_index
 
 def load_obligate_terms(obligate_path):
     """ loads a list of HPO terms for specific genes that affected people must have
