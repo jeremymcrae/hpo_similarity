@@ -9,7 +9,7 @@ class checkHPOMatches(object):
     """ class to find matching HPO terms for genes to HPO terms in probands
     """
     
-    def __init__(family_hpos, graph, genes_index):
+    def __init__(self, family_hpos, graph, genes_index):
         """ initiate the class with some standard values
         
         Args:
@@ -64,8 +64,8 @@ class checkHPOMatches(object):
                         break
                 
                 if has_obligate:
-                    # subgraph = graph.subgraph(subterms)
-                    # self.plot_subgraph(subgraph, obligate_term, proband_term)
+                    subgraph = graph.subgraph(subterms)
+                    self.plot_subgraph(subgraph, obligate_term, proband_term)
                     
                     if proband not in hpo_matches:
                         hpo_matches[proband] = []
@@ -154,10 +154,19 @@ class checkHPOMatches(object):
         labels[top_term] = top_term
         labels[found_term] = found_term
         
+        # show the edges for the path from the top level term to the found term
+        edges = graph.edges()
+        path_between_nodes = nx.shortest_path(graph, top_term, found_term)
+        edges_to_highlight = []
+        for pos in path_between_nodes[:-1]:
+            edges.highlight.append(path_between_nodes[pos], path_between_nodes[pos + 1])
+        
         pos = nx.spectral_layout(graph)
-        nx.draw_networkx(graph, pos=pos, nodelist=nodes, with_labels=False, \
+        nx.draw_networkx_nodes(graph, pos=pos, nodelist=nodes, with_labels=False, \
                                width=0.01, node_color=cols, node_size=sizes, \
                                alpha=0.2)
+        nx.draw_networkx_edges(graph, pos, edge_list=edges, width=0.01)
+        nx.draw_networkx_egdes(graph, pos, edge_list=edges_to_highlight, width=0.5, egde_color="red")
         nx.draw_networkx_labels(graph, pos=pos, labels=labels, font_size=10, \
                                 font_color="red")
         plt.pyplot.savefig("test.pdf")
