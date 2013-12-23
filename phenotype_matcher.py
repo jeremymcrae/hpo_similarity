@@ -4,9 +4,18 @@
 # dependencies: 
 #    go-parser (http://bazaar.launchpad.net/~ntamas/+junk/go-parser/files)
 #    networkx (http://networkx.github.io/, pip install --user networkx)
-#    matplotlib (pip install --user matplotlib)
+#    matplotlib (http://matplotlib.org/, pip install --user matplotlib)
 #    HPO (http://compbio.charite.de/hudson/job/hpo/ or http://www.human-phenotype-ontology.org/)
 #    DDG2P
+
+# TODO: quantify success against reported variants
+# TODO: set up information content calculations
+# TODO: investigate graph similarity analyses
+# TODO: syne1  - add in specific term matching, eg ataxia
+# TODO: growth parameters - phenotype matching with percentiles - eg if a
+#       child has microcephaly, exclude them if their head circumference
+#       is above the 50th percentile
+
 
 import networkx as nx
 import os
