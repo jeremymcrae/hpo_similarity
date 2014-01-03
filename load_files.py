@@ -19,7 +19,6 @@ def load_ddg2p(ddg2p_path):
     header = f.readline().strip().split("\t")
     if "type" in header:
         gene_label = "gene"
-        confirmed_status_label = "type"
         inheritance_label = "mode"
         hpo_label = "hpo_ids"
     else:
@@ -27,7 +26,6 @@ def load_ddg2p(ddg2p_path):
     
     # get the positions of the columns in the list of header labels
     gene_column = header.index(gene_label)
-    confirmed_status_column = header.index(confirmed_status_label)
     inheritance_column = header.index(inheritance_label)
     hpo_column = header.index(hpo_label)
     
@@ -49,11 +47,11 @@ def load_ddg2p(ddg2p_path):
         hpo_terms = hpo_terms.split(";")
         hpo_terms = [x.strip() for x in hpo_terms]
         genes[gene][inheritance].update(hpo_terms)
-    
+        
     return genes
 
 
-class familyHPO(object):
+class FamilyHPO(object):
     """small class to handle HPO terms for family members of a trio
     """
     
@@ -146,7 +144,7 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
         if proband_id in alt_ids:
             proband_id = alt_ids[proband_id]
         
-        participant_hpo[proband_id] = familyHPO(child_hpo, maternal_hpo, paternal_hpo)
+        participant_hpo[proband_id] = FamilyHPO(child_hpo, maternal_hpo, paternal_hpo)
     
     return participant_hpo
 
@@ -170,6 +168,7 @@ def load_candidate_genes(candidate_genes_path):
     inheritance_column = header.index(inheritance_label)
     
     genes_index = {}
+    probands_index = {}
     
     for line in f:
         # ignore blank lines
@@ -184,9 +183,13 @@ def load_candidate_genes(candidate_genes_path):
         if gene not in genes_index:
             genes_index[gene] = set()
          
+        if proband_ID not in probands_index:
+            probands_index[proband_ID] = set()
+         
         genes_index[gene].add((proband_ID, inheritance))
+        probands_index[proband_ID].add((gene, inheritance))
     
-    return genes_index
+    return genes_index, probands_index
 
 def load_obligate_terms(obligate_path):
     """ loads a list of HPO terms for specific genes that affected people must have

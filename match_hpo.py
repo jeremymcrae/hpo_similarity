@@ -1,13 +1,12 @@
 """ find matching HPO terms for genes to HPO terms in probands
 """
 
-import os
 import sys
 import matplotlib as plt
 plt.use("Agg")
 import networkx as nx
 
-class checkHPOMatches(object):
+class CheckHPOMatches(object):
     """ class to find matching HPO terms for genes to HPO terms in probands
     """
     
@@ -46,7 +45,6 @@ class checkHPOMatches(object):
             if gene not in self.genes_index:
                 continue
             
-            obligate_hpos = obligate_terms[gene]
             probands = self.genes_index[gene]
             
             for proband in probands:
@@ -69,8 +67,8 @@ class checkHPOMatches(object):
                         break
                 
                 if has_obligate:
-                    subgraph = self.graph.subgraph(subterms)
-                    self.plot_subgraph(subgraph, obligate_term, proband_term)
+                    # subgraph = self.graph.subgraph(subterms)
+                    # self.plot_subgraph(subgraph, obligate_term, proband_term)
                     
                     if proband not in hpo_matches:
                         hpo_matches[proband] = []
@@ -81,16 +79,14 @@ class checkHPOMatches(object):
         
         return hpo_matches
     
-    def get_subterms(self,top_term):
+    def get_subterms(self, top_term):
         """ finds the set of subterms that descend from a top level HPO term
         """
         
         if top_term in self.cached_terms:
             subterms = self.cached_terms[top_term]
         else:
-            subterms = nx.dfs_successors(self.graph, top_term)
-            successors = subterms.values()
-            subterms = set([item for sublist in successors for item in sublist])
+            subterms = nx.descendants(self.graph, top_term)
             subterms.add(top_term)
             self.cached_terms[top_term] = subterms
         
@@ -150,8 +146,8 @@ class checkHPOMatches(object):
         nx.draw_networkx_edges(g, pos, edgelist=path_edges, width=2, edge_color="blue")
         nx.draw_networkx_labels(g, pos=pos, labels=end_labels, font_size=10, \
                                 font_color="black")
-        nx.draw_networkx_labels(g, pos=pos, labels=intermediate_labels, font_size=6, \
-                                font_color="black")
+        nx.draw_networkx_labels(g, pos=pos, labels=intermediate_labels, \
+                                font_size=6, font_color="black")
         
         plt.pyplot.savefig(plotname)
         plt.pyplot.close()

@@ -53,12 +53,12 @@ class loadHPONetwork(object):
             if key in obo_tags:
                 self.g.node[node_id] = obo_tags[key]
 
-    def track_alt_ids(self, node_id, obo_tags):
+    def track_alt_ids(self, obo_tags, node_id):
         """ track alternate HPO IDs, to map between alternate and canonical
         
         Args:
-            node_id: string ID for a graph node
             obo_tags: tags for an obo entry
+            node_id: string ID for a graph node
         
         Returns:
             nothing, updates the dictionaries within this function
@@ -68,12 +68,12 @@ class loadHPONetwork(object):
         if "alt_id" in obo_tags:
             for alt_id in obo_tags["alt_id"]:
                 alt_id  = str(alt_id)
-                self.alt_mapper[alt_id] = node_id
+                self.alt_id_mapper[alt_id] = node_id
                 
-                if node_id not in ref_mapper:
-                    self.ref_mapper[node_id] = []
+                if node_id not in self.ref_id_mapper:
+                    self.ref_id_mapper[node_id] = []
                 
-                self.ref_mapper[node_id].append(alt_id)
+                self.ref_id_mapper[node_id].append(alt_id)
 
     def check_if_obsolete(self, obo_tags):
         """ checks if an "is_obsolete" flag is in the tags for an obo entry
@@ -139,6 +139,15 @@ class loadHPONetwork(object):
         
         try:
             return self.g
+        except AttributeError:
+            return None
+    
+    def get_alt_ids(self):
+        """ passes the alt ID dictionary for external functions
+        """
+        
+        try:
+            return self.alt_id_mapper
         except AttributeError:
             return None
 
