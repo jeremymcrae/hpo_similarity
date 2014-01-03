@@ -1,7 +1,6 @@
 gene	phenotype	hpo_id
 FLG	Abnormality of the skin	HP:0000951 
-SYNE1	Abnormality of the central nervous system	HP:0002011
-SYNE1	Abnormality of the musculature	HP:0003011
+SYNE1	Ataxia	HP:0001251
 HSPG2	Abnormality of the skeletal system	HP:0000924
 LRP2	Abnormality of the central nervous system	HP:0002011
 LRP2	Abnormality of the eye	HP:0000478
