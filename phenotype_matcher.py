@@ -9,27 +9,20 @@
 #    DDG2P
 
 # TODO: quantify success against reported variants
-# TODO: set up information content calculations
 # TODO: investigate graph similarity analyses
-# TODO: syne1  - add in specific term matching, eg ataxia
 # TODO: growth parameters - phenotype matching with percentiles - eg if a
 #       child has microcephaly, exclude them if their head circumference
 #       is above the 50th percentile
 
 
-import networkx as nx
 import os
 import sys
 
 import load_files
 import create_hpo_graph as hpo
 import match_hpo
-
-# load the HPO database as graph database
-    # convert terms between database versions, if necessary
-
-# load clinical reporting file, find frequently identified genes, check their HPO terms from DDG2P, 
-# load the patients HPO terms, check for matches between top genes and 
+import hpo_information_content as hpo_ic
+import hpo_filter_reporting as reporting
 
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
@@ -63,72 +56,16 @@ def count_genes(genes_index):
     
     return genes_count
 
-def add_matches_to_report(path, matches, searched_genes, column_label):
-    """ annotates a file of candidate variants using dicts of proband matches indexed by gene
-    
-    Args:
-        path: path to file listing variants for each proband
-        matches: fict of probands that were matched for each gene
-        searched_genes: list of searched genes, so we can add whether a gene 
-            was not found because it was not searched for
-        column_label: label to use in the file header
-    """
-    
-    f = open(path)
-    header = f.readline().strip().split("\t")
-    proband_label = "proband"
-    gene_label = "gene"
-    proband_column = header.index(proband_label)
-    gene_column = header.index(gene_label)
-    
-    header.append(column_label + "_searched")
-    header.append(column_label + "_passed")
-    header = "\t".join(header) + "\n"
-    
-    parsed_lines = [header]
-    for line in f:
-        if line == "\n":
-            parsed_lines.append(line)
-            continue
-        
-        line = line.strip().split("\t")
-        proband = line[proband_column]
-        gene = line[gene_column]
-        
-        searched = "not_checked"
-        if gene in searched_genes:
-            searched = "gene_checked"
-        
-        if searched == "not_checked":
-            matched = "NA"
-        else:
-            matched = "FAIL"
-        
-        if proband in matches:
-            if gene in matches[proband]:
-                matched = "PASS"
-        
-        line.append(searched)
-        line.append(matched)
-        
-        line = "\t".join(line) + "\n"
-        parsed_lines.append(line)
-    
-    f.close()
-    
-    output = open(path, "w")
-    output.writelines(parsed_lines)
-    output.close()
-
 def main():
     # build a graph of DDG2P terms, so we can trace paths between terms
     hpo_file = hpo.loadHPONetwork(HPO_PATH)
     graph = hpo_file.get_graph()
+    alt_node_ids = hpo_file.get_alt_ids()
     
     # load gene HPO terms, proband HPO terms, probands with candidates in these genes
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
-    genes_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
     
     # load hpo terms that are required for specific genes
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
@@ -136,17 +73,24 @@ def main():
     
     # # report the number of probands found for each gene
     # for gene in count_genes(genes_index):
-    #     print str(gene[1]) + "\t" + str(gene[0])
+    #     print(str(gene[1]) + "\t" + str(gene[0]))
     
     # find the probands that have hpo terms that match the terms required for certain genes
-    matcher = match_hpo.checkHPOMatches(family_hpo_terms, graph, genes_index)
+    matcher = match_hpo.CheckHPOMatches(family_hpo_terms, graph, genes_index)
     obligate_matches = matcher.find_matches(obligate_hpo_terms)
     ddg2p_organ_matches = matcher.find_matches(ddg2p_hpo_organ_terms)
     
     # add the gene matches to the reporting file
-    add_matches_to_report(CANDIDATE_VARIANTS_PATH, obligate_matches, obligate_hpo_terms, "obligate_terms")
-    add_matches_to_report(CANDIDATE_VARIANTS_PATH, ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
+    reporting_path = CANDIDATE_VARIANTS_PATH[:-4] + ".with_hpo_matches.txt"
+    report = reporting.Reporting(CANDIDATE_VARIANTS_PATH, reporting_path)
     
+    report.add_matches_to_report(obligate_matches, obligate_hpo_terms, "obligate_terms")
+    report.add_matches_to_report(ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
+    
+    # now look for similarity scores
+    ic = hpo_ic.CalculateSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
+    scores = ic.get_similarity_scores(probands_index)
+    report.add_scores_to_report(scores, "max_IC_scores")
 
 if __name__ == '__main__':
     main()
