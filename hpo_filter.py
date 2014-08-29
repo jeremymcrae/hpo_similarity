@@ -21,12 +21,13 @@ import sys
 import load_files
 import create_hpo_graph as hpo
 import match_hpo
-import hpo_information_content as hpo_ic
+import hpo_similarity as similarity
 import hpo_filter_reporting as reporting
 
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
 HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
+ALL_PROBAND_HPO_TERMS_PATH = os.path.join(HPO_FOLDER, "hpo_data", "patient_hpo_terms.txt")
 OBLIGATE_GENES_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "obligate_hpo_terms.frequent_genes.txt")
 ORGAN_TO_HPO_MAPPER_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "ddg2p_organ_code_to_hpo_term.txt")
 DDG2P_ORGAN_PATH = os.path.join(HPO_FOLDER, "obligate_terms", "ddg2p_organ_specificity.txt")
@@ -54,6 +55,9 @@ def count_genes(genes_index):
     genes_count.sort()
     genes_count.reverse()
     
+    for gene in genes_count:
+        print(str(gene[1]) + "\t" + str(gene[0]))
+    
     return genes_count
 
 def main():
@@ -66,14 +70,14 @@ def main():
     ddg2p_genes = load_files.load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_files.load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     genes_index, probands_index = load_files.load_candidate_genes(CANDIDATE_VARIANTS_PATH)
+    all_proband_hpo_terms = load_files.load_full_proband_hpo_list(ALL_PROBAND_HPO_TERMS_PATH)
     
     # load hpo terms that are required for specific genes
     obligate_hpo_terms = load_files.load_obligate_terms(OBLIGATE_GENES_PATH)
     ddg2p_hpo_organ_terms = load_files.load_organ_terms(ORGAN_TO_HPO_MAPPER_PATH, DDG2P_ORGAN_PATH)
     
     # # report the number of probands found for each gene
-    # for gene in count_genes(genes_index):
-    #     print(str(gene[1]) + "\t" + str(gene[0]))
+    # genes_count = count_genes(genes_index)
     
     # find the probands that have hpo terms that match the terms required for certain genes
     matcher = match_hpo.CheckHPOMatches(family_hpo_terms, graph, genes_index)
@@ -88,9 +92,41 @@ def main():
     report.add_matches_to_report(ddg2p_organ_matches, ddg2p_hpo_organ_terms, "ddg2p_organ_terms")
     
     # now look for similarity scores
-    ic = hpo_ic.CalculateSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
-    scores = ic.get_similarity_scores(probands_index)
-    report.add_scores_to_report(scores, "max_IC_scores")
+    matcher = similarity.ICSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    scores_IC = matcher.get_similarity_scores(probands_index)
+    # print(matcher.find_most_informative_term())
+    
+    matcher = similarity.ICDistanceSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    scores_distance = matcher.get_similarity_scores(probands_index)
+    
+    matcher = similarity.PathLengthSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    scores_length = matcher.get_similarity_scores(probands_index)
+    
+    matcher = similarity.JaccardSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    scores_jaccard = matcher.get_similarity_scores(probands_index)
+    
+    report.add_scores_to_report(scores_IC, "similarity_max_IC")
+    report.add_scores_to_report(scores_distance, "similarity_max_distance")
+    report.add_scores_to_report(scores_length, "similarity_path_length")
+    report.add_scores_to_report(scores_jaccard, "similarity_jaccard")
+    
+    # found_terms = []
+    # for node in graph:
+    #     # print(node, graph.node[node])
+    #     name = graph.node[node]["name"]
+    #     found = False
+    #     if any("tall" in s.lower() for s in name):
+    #         found = True
+        
+    #     definition = [""]
+    #     if "def" in graph.node[node]:
+    #         definition = graph.node[node]["def"]
+        
+    #     if found:
+    #         found_terms.append([node, name, definition])
+    
+    # for term in sorted(found_terms):
+    #     print(term)
 
 if __name__ == '__main__':
     main()

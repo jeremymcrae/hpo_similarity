@@ -83,12 +83,12 @@ class CheckHPOMatches(object):
         """ finds the set of subterms that descend from a top level HPO term
         """
         
-        if top_term in self.cached_terms:
-            subterms = self.cached_terms[top_term]
-        else:
+        if top_term not in self.cached_terms:
             subterms = nx.descendants(self.graph, top_term)
             subterms.add(top_term)
             self.cached_terms[top_term] = subterms
+        
+        subterms = self.cached_terms[top_term]
         
         return subterms
     

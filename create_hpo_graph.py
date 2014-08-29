@@ -51,7 +51,11 @@ class loadHPONetwork(object):
         
         for key in hpo_keys:
             if key in obo_tags:
-                self.g.node[node_id] = obo_tags[key]
+                if key not in self.g.node[node_id]:
+                    self.g.node[node_id][key] = []
+                
+                value = str(obo_tags[key][0])
+                self.g.node[node_id][key].append(value)
 
     def track_alt_ids(self, obo_tags, node_id):
         """ track alternate HPO IDs, to map between alternate and canonical
@@ -67,7 +71,7 @@ class loadHPONetwork(object):
         # make sure we can convert between the alternate IDs and their HPO ID
         if "alt_id" in obo_tags:
             for alt_id in obo_tags["alt_id"]:
-                alt_id  = str(alt_id)
+                alt_id = str(alt_id)
                 self.alt_id_mapper[alt_id] = node_id
                 
                 if node_id not in self.ref_id_mapper:

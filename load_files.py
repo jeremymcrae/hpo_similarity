@@ -148,6 +148,52 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     
     return participant_hpo
 
+def load_participants_phenotypes(pheno_path, alt_id_path):
+    """ loads patient data, and obtains
+    """
+    
+    # loads the decipher to DDD ID mapping file
+    alt_ids = {}
+    f = open(alt_id_path)
+    for line in f:
+        line = line.split("\t")
+        ref_id = line[0]
+        alt_id = line[1]
+        if ":" in alt_id:
+            alt_id = alt_id.split(':"')[0]
+        alt_ids[alt_id] = ref_id
+    
+    # load the phenotype data for each participant
+    f = open(pheno_path)
+    
+    # allow for gene files with different column names and positions
+    header = f.readline().strip().split("\t")
+    if "decipher_id" not in header:
+        raise ValueError("The phenotype file lacks expected header column names")
+    
+    # get the positions of the columns in the list of header labels
+    proband_column = header.index("decipher_id")
+    height_column = header.index("height_sd")
+    weight_column = header.index("weight_sd")
+    ofc_column = header.index("ofc_sd")
+    
+    phenotypes = {}
+    for line in f:
+        line = line.split("\t")
+        proband_id = line[proband_column]
+        height_sd = line[height_column]
+        weight_sd = line[weight_column]
+        ofc_sd = line[ofc_column]
+        
+        # swap the proband across to the DDD ID if it exists
+        if proband_id in alt_ids:
+            proband_id = alt_ids[proband_id]
+        
+        phenotypes[proband_id] = {"height": height_sd, "weight": weight_sd, \
+            "ofc": ofc_sd}
+    
+    return phenotypes
+
 def load_candidate_genes(candidate_genes_path):
     """ loads candidate genes for the participants
     """
@@ -270,7 +316,28 @@ def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
     
     return obligate_organs
         
+def load_full_proband_hpo_list(path):
+    """ loads a set of hpo terms from all probands recruited to date
     
+    Args:
+        path: path to proband phenotype file
+    
+    Returns:
+        list of (proband, hpo_term) tuples
+    """
+    
+    f = open(path, "r")
+    
+    hpo_list = []
+    for line in f:
+        line = line.strip().split("\t")
+        proband = line[0]
+        hpo_term = line[2]
+        
+        hpo_list.append((proband, hpo_term))
+    
+    return hpo_list
+        
 
 
 
