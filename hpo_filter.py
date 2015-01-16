@@ -13,7 +13,7 @@ import os
 import sys
 
 from src.load_files import load_ddg2p, load_participants_hpo_terms, \
-    load_clinical_filter_variants, load_full_proband_hpo_list
+    load_clinical_filter_variants
 from src.create_hpo_graph import loadHPONetwork
 from src.match_hpo import CheckHPOMatches
 from src.similarity import ICSimilarity, ICDistanceSimilarity, \
@@ -23,7 +23,6 @@ from src.reporting import Reporting
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
 HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
-ALL_PROBAND_HPO_TERMS_PATH = os.path.join(HPO_FOLDER, "hpo_data", "patient_hpo_terms.txt")
 CANDIDATE_VARIANTS_PATH = os.path.join(USER_PATH, "clinical_reporting.2015-01-15.txt")
 
 ddd_freeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
@@ -72,23 +71,22 @@ def main():
     ddg2p_genes = load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
     probands = load_clinical_filter_variants(CANDIDATE_VARIANTS_PATH)
-    all_proband_hpo_terms = load_full_proband_hpo_list(ALL_PROBAND_HPO_TERMS_PATH)
     
     # add the gene matches to the reporting file
     reporting_path = CANDIDATE_VARIANTS_PATH[:-4] + ".with_hpo_matches.txt"
     report = Reporting(CANDIDATE_VARIANTS_PATH, reporting_path)
     
     # # now look for similarity scores
-    # matcher = ICSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    # matcher = ICSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
     # scores_IC = matcher.get_similarity_scores(probands)
     #
-    # matcher = ICDistanceSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    # matcher = ICDistanceSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
     # scores_distance = matcher.get_similarity_scores(probands)
     
-    matcher = PathLengthSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    matcher = PathLengthSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
     scores_length = matcher.get_similarity_scores(probands)
     
-    # matcher = JaccardSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids, all_proband_hpo_terms)
+    # matcher = JaccardSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
     # scores_jaccard = matcher.get_similarity_scores(probands)
     
     # report.add_scores_to_report(scores_IC, "similarity_max_IC")

@@ -30,7 +30,7 @@ class CalculateSimilarity(object):
         self.ancestor_cache = {}
         self.path_cache = {}
         
-        self.test_tally_hpo_terms(proband_phenotypes)
+        self.tally_hpo_terms()
     
     def get_similarity_scores(self, probands):
         """ determines similarity scores for the probands
@@ -93,8 +93,6 @@ class CalculateSimilarity(object):
             similarity = "NA"
             if len(max_values) > 0:
                 similarity = "{0:.2f}".format(sum(max_values)/len(max_values))
-                # similarity = "{0:.2f}".format(max(max_values))
-                # similarity = "{0}".format(self.get_h_index(max_values))
             
             if name not in similarity_scores:
                 similarity_scores[name] = {}
@@ -102,33 +100,6 @@ class CalculateSimilarity(object):
             similarity_scores[name][inheritance] = similarity
         
         return similarity_scores
-    
-    def get_h_index(self, scores):
-        """ get the h-index value from a list of scores
-        
-        Args:
-            scores: list of float scores
-        """
-        
-        h = 0
-        
-        for score in scores:
-            if score > h:
-                h += 1
-        
-        return h
-    
-    def geomean(self, numbers):
-        """ get the geometric mean of a list of values
-        """
-        
-        power = float(1)/len(numbers)
-        
-        total = 1
-        for x in numbers:
-            total *= x
-        
-        return total ** power
     
     def fix_alternate_ID(self, term):
         """ converts HPO terms using alternate IDs to the standard term
@@ -193,24 +164,6 @@ class CalculateSimilarity(object):
                     
                     self.hpo_counts[term] += 1
                     self.total_freq += 1
-    
-    def test_tally_hpo_terms(self, patient_pheno):
-        """ tallies each HPO term across the proband phenotypes
-        
-        Args:
-            genes: hpo term dictionary
-        """
-        
-        self.hpo_counts = {}
-        self.total_freq = 0.0
-        
-        for line in patient_pheno:
-            term = line[1]
-            if term not in self.hpo_counts:
-                self.hpo_counts[term] = 0.0
-            
-            self.hpo_counts[term] += 1
-            self.total_freq += 1
     
     def get_subterms(self, top_term):
         """ finds the set of subterms that descend from a top level HPO term
