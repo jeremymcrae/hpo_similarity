@@ -167,4 +167,40 @@ def load_full_proband_hpo_list(path):
         hpo_list.append((proband, hpo_term))
     
     return hpo_list
+
+def load_de_novos(path):
+    """ load de novos found in probands
+    
+    Args:
+        path: path to de novo containing file
+    
+    Returns:
+        dictionary of proband ID lists, indexed by HGNC symbol
+    """
+    
+    functional = set(["stop_gained", "splice_acceptor_variant",
+        "splice_donor_variant", "frameshift_variant", "missense_variant",
+        "initiator_codon_variant", "stop_lost", "inframe_deletion",
+        "inframe_insertion", "splice_region_variant"])
+    
+    de_novos = {}
+    with open(path) as handle:
+        header = handle.readline().strip().split("\t")
         
+        for line in handle:
+            line = line.strip().split("\t")
+            
+            proband_id = line[0]
+            hgnc_symbol = line[8]
+            consequence = line[10]
+            
+            if consequence not in functional:
+                continue
+            
+            if hgnc_symbol not in de_novos:
+                de_novos[hgnc_symbol] = set()
+            
+            de_novos[hgnc_symbol].add(proband_id)
+    
+    return de_novos
+            

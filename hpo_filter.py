@@ -15,7 +15,6 @@ import sys
 from src.load_files import load_ddg2p, load_participants_hpo_terms, \
     load_clinical_filter_variants
 from src.create_hpo_graph import loadHPONetwork
-from src.match_hpo import CheckHPOMatches
 from src.similarity import ICSimilarity, ICDistanceSimilarity, \
     PathLengthSimilarity, JaccardSimilarity
 from src.reporting import Reporting
