@@ -17,10 +17,10 @@ def load_ddg2p(ddg2p_path):
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "type" in header:
-        gene_label = "gene"
-        inheritance_label = "mode"
-        hpo_label = "hpo_ids"
+    if "DDD_category" in header:
+        gene_label = "gencode_gene_name"
+        inheritance_label = "Allelic_requirement"
+        hpo_label = "HPO_ids"
     else:
         raise ValueError("The gene file lacks expected header column names")
     
@@ -72,21 +72,25 @@ class FamilyHPO(object):
         """ formats a string of hpo terms to a list
         
         Args:
-            hpo_terms: string of hpo terms joined with "|" 
+            hpo_terms: string of hpo terms joined with "|"
         
         Returns:
             list of hpo terms, or None
         """
         
+        hpo_terms = hpo_terms.strip()
+        
         # account for no hpo terms recorded for a person
-        if hpo_terms.strip() == ".":
+        if hpo_terms == ".":
             return None
         
         # account for multiple hpo terms for an individual
         if "|" in hpo_terms:
-            return hpo_terms.strip().split("|")
+            hpo_terms = hpo_terms.split("|")
+        else:
+            hpo_terms = [hpo_terms]
         
-        return [hpo_terms.strip()]
+        return hpo_terms
     
     def get_child_hpo(self):
         return self.child_hpo
@@ -102,35 +106,17 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     """ loads patient data, and obtains
     """
     
-    # loads the decipher to DDD ID mapping file
-    alt_ids = {}
-    f = open(alt_id_path)
-    for line in f:
-        line = line.split("\t")
-        ref_id = line[0]
-        alt_id = line[1]
-        if ":" in alt_id:
-            alt_id = alt_id.split(':"')[0]
-        alt_ids[alt_id] = ref_id
+    alt_ids = load_alt_id_map(alt_id_path)
     
     # load the phenotype data for each participant
     f = open(pheno_path)
-    
-    # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "decipher_id" in header:
-        proband_label = "decipher_id"
-        child_hpo_label = "child_hpo"
-        maternal_hpo_label = "maternal_hpo"
-        paternal_hpo_label = "paternal_hpo"
-    else:
-        raise ValueError("The phenotype file lacks expected header column names")
     
     # get the positions of the columns in the list of header labels
-    proband_column = header.index(proband_label)
-    child_hpo_column = header.index(child_hpo_label)
-    maternal_hpo_column = header.index(maternal_hpo_label)
-    paternal_hpo_column = header.index(paternal_hpo_label)
+    proband_column = header.index("patient_id")
+    child_hpo_column = header.index("child_hpo")
+    maternal_hpo_column = header.index("maternal_hpo")
+    paternal_hpo_column = header.index("paternal_hpo")
     
     participant_hpo = {}
     for line in f:
@@ -152,27 +138,16 @@ def load_participants_phenotypes(pheno_path, alt_id_path):
     """ loads patient data, and obtains
     """
     
-    # loads the decipher to DDD ID mapping file
-    alt_ids = {}
-    f = open(alt_id_path)
-    for line in f:
-        line = line.split("\t")
-        ref_id = line[0]
-        alt_id = line[1]
-        if ":" in alt_id:
-            alt_id = alt_id.split(':"')[0]
-        alt_ids[alt_id] = ref_id
+    alt_ids = load_alt_id_map(alt_id_path)
     
     # load the phenotype data for each participant
     f = open(pheno_path)
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "decipher_id" not in header:
-        raise ValueError("The phenotype file lacks expected header column names")
     
     # get the positions of the columns in the list of header labels
-    proband_column = header.index("decipher_id")
+    proband_column = header.index("patient_id")
     height_column = header.index("height_sd")
     weight_column = header.index("weight_sd")
     ofc_column = header.index("ofc_sd")
@@ -194,24 +169,35 @@ def load_participants_phenotypes(pheno_path, alt_id_path):
     
     return phenotypes
 
+def load_alt_id_map(alt_id_path):
+    """ loads the decipher to DDD ID mapping file
+    """
+    
+    alt_ids = {}
+    
+    with open(alt_id_path) as f:
+        for line in f:
+            line = line.split("\t")
+            ref_id = line[0]
+            alt_id = line[1]
+            
+            # if ":" in alt_id:
+            #     alt_id = alt_id.split(":")[0]
+            
+            alt_ids[alt_id] = ref_id
+    
+    return alt_ids
+
 def load_candidate_genes(candidate_genes_path):
     """ loads candidate genes for the participants
     """
     
     f = open(candidate_genes_path)
-    
-     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "proband" in header:
-        proband_label = "proband"
-        gene_label = "gene"
-        inheritance_label = "inheritance"
-    else:
-        raise ValueError("The variant file lacks expected header column names")
     
-    proband_column = header.index(proband_label)
-    gene_column = header.index(gene_label)
-    inheritance_column = header.index(inheritance_label)
+    proband_column = header.index("proband")
+    gene_column = header.index("gene")
+    inheritance_column = header.index("inheritance")
     
     genes_index = {}
     probands_index = {}
@@ -242,9 +228,9 @@ def load_obligate_terms(obligate_path):
     """
     
     f = open(obligate_path)
-    
-    # pull out the column numbers from th header
     header = f.readline().strip().split("\t")
+    
+    # pull out the column numbers from the header
     gene_label = "gene"
     hpo_label = "hpo_id"
     gene_column = header.index(gene_label)
@@ -338,7 +324,3 @@ def load_full_proband_hpo_list(path):
     
     return hpo_list
         
-
-
-
-

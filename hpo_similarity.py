@@ -1,4 +1,4 @@
-""" determines similarity scores between proband HPO terms and the DDG2P 
+""" determines similarity scores between proband HPO terms and the DDG2P
 genes predicted to be relevant to them.
 """
 
@@ -14,7 +14,7 @@ class CalculateSimilarity(object):
         """
         
         Args:
-            family_hpos: hpo term object, to get terms for probands, or parents 
+            family_hpos: hpo term object, to get terms for probands, or parents
             graph: graph of hpo terms, as networkx object
         """
         
@@ -77,7 +77,7 @@ class CalculateSimilarity(object):
             for proband_term in proband_terms:
                 proband_term = self.fix_alternate_ID(proband_term)
                 # for each proband HPO term, we look for the highest value
-                # across all the HPO terms for the gene 
+                # across all the HPO terms for the gene
                 max_value = None
                 for gene_term in gene_terms:
                     if gene_term == "":
@@ -133,8 +133,8 @@ class CalculateSimilarity(object):
     def fix_alternate_ID(self, term):
         """ converts HPO terms using alternate IDs to the standard term
         
-        some of the HPO terms recorded for the probands, or in the DDG2P 
-        database are alternate IDs for the HPO terms. If so, swap over to the 
+        some of the HPO terms recorded for the probands, or in the DDG2P
+        database are alternate IDs for the HPO terms. If so, swap over to the
         standard HPO term, as these are the node names in the HPO graph.
         """
         
@@ -146,9 +146,9 @@ class CalculateSimilarity(object):
     def get_gene_hpo_terms(self, gene_name, inheritance):
         """ pulls out the hpo terms for a DDG2P gene
         
-        Sometimes the DDG2P database does not have the inheritance mode 
+        Sometimes the DDG2P database does not have the inheritance mode
         listed for a gene for which we have found variants for a proband. This
-        is because occasionally the DDG2P genes have modes such as "Both", 
+        is because occasionally the DDG2P genes have modes such as "Both",
         which means either "Monoallelic or "Biallelic", and we have reported
         the variants under one of those specific modes. We need to convert the
         inheritance back in these cases, as well as for "Monoallelic on the
@@ -324,14 +324,14 @@ class ICSimilarity(CalculateSimilarity):
     def update_value(self, term_1, term_2, max_ic):
         """ finds the maximum information content value between two hpo terms
         
-        Calculates simlarity by Resnick's most informative ancestor, 
+        Calculates simlarity by Resnick's most informative ancestor,
         
-        Resnik P. Using information content to evaluate semantic similarity in 
-        a taxonomy, in: Proceedings of the 14th International Joint Conference 
+        Resnik P. Using information content to evaluate semantic similarity in
+        a taxonomy, in: Proceedings of the 14th International Joint Conference
         on Artificial Intelligence, 1995.
         
-        Kohler S et al. (2009). Clinical diagnostics in human genetics with 
-        semantic similarity searches in ontologies. American Journal of Human 
+        Kohler S et al. (2009). Clinical diagnostics in human genetics with
+        semantic similarity searches in ontologies. American Journal of Human
         Genetics, 85:457-464.
         
         Args:
@@ -361,8 +361,8 @@ class ICDistanceSimilarity(ICSimilarity):
         
         Calculates similarity by Jian and Conrath's distance measure
         
-        Jiang J, Conrath D. Semantic similarity based on corpus statistics and 
-        lexical taxonomy, in: Proceedings of the 10th International Conference 
+        Jiang J, Conrath D. Semantic similarity based on corpus statistics and
+        lexical taxonomy, in: Proceedings of the 10th International Conference
         on Research on Computational Linguistics, 1997.
         
         Args:
@@ -393,7 +393,7 @@ class ICDistanceSimilarity(ICSimilarity):
 
 class PathLengthSimilarity(CalculateSimilarity):
     """ calculate similarity score by path length
-    """   
+    """
     
     def get_shortest_path(self, term_1, term_2):
         """ finds the shortest path between two terms (and caches the result)
@@ -413,7 +413,7 @@ class PathLengthSimilarity(CalculateSimilarity):
        
         shortest_path = self.path_cache[(term_1, term_2)]
         
-        return shortest_path  
+        return shortest_path
     
     def find_closest_ancestor(self, node, ancestors):
         """ finds the closest ancestor of a term from a list of ancestor terms
@@ -431,7 +431,7 @@ class PathLengthSimilarity(CalculateSimilarity):
         ancestor_to_use = ""
         for ancestor in ancestors:
             length = len(self.get_shortest_path(ancestor, node))
-            if shortest is None or length < shortest:  
+            if shortest is None or length < shortest:
                 shortest = length
                 ancestor_to_use = ancestor
         
@@ -442,14 +442,14 @@ class PathLengthSimilarity(CalculateSimilarity):
         
         This implements the Leacock and Chodorow pathfinding measure, as
         described in Pedersen et al., (2007) Journal of Biomedical Informatics,
-        40:288-299. Note that as a directed acyclic graph, we can't find the 
-        path between terms on two different branches, we can only natively 
-        find paths from ancestors to descendants. We work around this by 
+        40:288-299. Note that as a directed acyclic graph, we can't find the
+        path between terms on two different branches, we can only natively
+        find paths from ancestors to descendants. We work around this by
         finding the closest ancestor for the terms, and then getting the paths
         to that.
         
-        Leacock C, Chodorow M. Combining local context and WordNet similarity 
-        for word sense identification. In: Fellbaum C, editor. WordNet: An 
+        Leacock C, Chodorow M. Combining local context and WordNet similarity
+        for word sense identification. In: Fellbaum C, editor. WordNet: An
         electronic lexical database. Cambridge, MA: MIT Press; 1998. p. 265-83
         
         Args:
@@ -523,4 +523,3 @@ class JaccardSimilarity(CalculateSimilarity):
         
     
     
-

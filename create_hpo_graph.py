@@ -11,10 +11,13 @@ class loadHPONetwork(object):
     """
     
     def __init__(self, hpo_path):
-        """ load the hpoe file, and process it into a network
+        """ load the hpo file, and process it into a network
         """
-        header, hpo = self.load_hpo_database(hpo_path)
-        self.create_hpo_graph(header, hpo)
+        self.hpo_header, self.hpo_list = self.load_hpo_database(hpo_path)
+        
+        # track alternate HPO IDs (since we use HPO IDs as node IDs)
+        self.alt_id_mapper = {}
+        self.ref_id_mapper = {}
     
     def load_hpo_database(self, hpo_path):
         """ load the human phenotype ontology (HPO) database in obo format
@@ -34,7 +37,7 @@ class loadHPONetwork(object):
         
         return parser.headers, hpo_entries
 
-    def add_hpo_attributes_to_node(self, node_id, obo_tags):
+    def add_hpo_attributes_to_node(self, graph, node_id, obo_tags):
         """ add hpo attributes to a graph node
         
         Args:
@@ -51,11 +54,13 @@ class loadHPONetwork(object):
         
         for key in hpo_keys:
             if key in obo_tags:
-                if key not in self.g.node[node_id]:
-                    self.g.node[node_id][key] = []
+                if key not in graph.node[node_id]:
+                    graph.node[node_id][key] = []
                 
                 value = str(obo_tags[key][0])
-                self.g.node[node_id][key].append(value)
+                graph.node[node_id][key].append(value)
+        
+        return graph
 
     def track_alt_ids(self, obo_tags, node_id):
         """ track alternate HPO IDs, to map between alternate and canonical
@@ -91,67 +96,48 @@ class loadHPONetwork(object):
         
         if "is_obsolete" in obo_tags:
             if str(obo_tags["is_obsolete"][0]) == "true":
-                return True 
+                return True
         
         return False
 
-    def create_hpo_graph(self, hpo_header, hpo_list):
-        """builds a networkx graph from obo parsed data
-        
-        Args:
-            hpo_header: header for obo file
-            hpo_list: list of obo entries
+    def get_graph(self):
+        """ builds a networkx graph from obo parsed data
         
         Returns:
-            nothing
+            networkx graph object
         """
         
-        self.g = nx.DiGraph()
+        graph = nx.DiGraph()
         
         # add the hpo header values as attributes for the graph
-        for header_id in hpo_header:
-            self.g.graph[header_id] = hpo_header[header_id]
+        for header_id in self.hpo_header:
+            graph.graph[header_id] = self.hpo_header[header_id]
         
-        # track alternate HPO IDs (since we use HPO IDs as node IDs)
-        self.alt_id_mapper = {}
-        self.ref_id_mapper = {}
-        
-        for entry in hpo_list:
+        for entry in self.hpo_list:
             tags = entry.tags
             # ignore obsolete HPO entries
             if self.check_if_obsolete(tags):
                 continue
             
             node_id = str(tags["id"][0])
-            self.g.add_node(node_id)
+            graph.add_node(node_id)
             
             # make sure we can convert between HPO ID and their alternate IDs
             self.track_alt_ids(tags, node_id)
             
             # include the attribute data for the node
-            self.add_hpo_attributes_to_node(node_id, tags)
+            graph = self.add_hpo_attributes_to_node(graph, node_id, tags)
             
             # add the predecessors to the node
             if "is_a" in tags:
                 for predecessor in tags["is_a"]:
                     predecessor = str(predecessor)
-                    self.g.add_edge(predecessor, node_id)
-    
-    def get_graph(self):
-        """ passes the graph object for external functions
-        """
+                    graph.add_edge(predecessor, node_id)
         
-        try:
-            return self.g
-        except AttributeError:
-            return None
+        return graph
     
     def get_alt_ids(self):
         """ passes the alt ID dictionary for external functions
         """
         
-        try:
-            return self.alt_id_mapper
-        except AttributeError:
-            return None
-
+        return self.alt_id_mapper
