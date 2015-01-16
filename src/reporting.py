@@ -23,72 +23,91 @@ class Reporting(object):
         """ finds the important columns from the reporting file header
         """
         
-        f = open(self.report_path, "r")
-        header = f.readline().strip().split("\t")
-        f.close()
+        with open(self.report_path, "r") as f:
+            header = f.readline().strip().split("\t")
         
-        proband_label = "proband"
-        gene_label = "gene"
-        inheritance_label = "inheritance"
-        
-        self.proband_column = header.index(proband_label)
-        self.gene_column = header.index(gene_label)
-        self.inheritance_column = header.index(inheritance_label)
+        self.proband_column = header.index("proband")
+        self.gene_column = header.index("gene")
+        self.inheritance_column = header.index("inheritance")
     
-    def start_modified_file(self):
+    def start_modified_file(self, labels):
         """ starts the list of modified lines, by adding column labels
+        
+        Args:
+            labels: column names to be added to the file header.
+        
+        Returns:
+            Open file handle for output file.
         """
         
-        f = open(self.report_path)
-        header = f.readline().strip().split("\t")
+        handle = open(self.report_path)
+        header = handle.readline().strip().split("\t")
         
-        for label in self.column_labels:
+        for label in labels:
             header.append(label)
         header = "\t".join(header) + "\n"
         
         self.parsed_lines = [header]
         
-        return f
+        return handle
     
-    def get_insert_values(self):
-        """ finds values to add to the clinical reporting line
+    def get_insert_values(self, data, datatype, line):
+        """ finds values to add to the clinical reporting line.
+        
+        Args:
+            data: dictionary of values for a given proband, gene and inheritance
+            datatype: one of ("matches", "scores")
+            line: list of values for a clinical filtering variant line
+        
+        Returns:
+            finds the value for a specified proband, gene and inheritance state.
         """
         
-        if self.type == "matches":
-            searched_genes = self.data[1]
-            matches = self.data[0]
+        proband = line[self.proband_column]
+        gene = line[self.gene_column]
+        inh = line[self.inheritance_column]
+        
+        if datatype == "matches":
+            searched_genes = data[1]
+            matches = data[0]
             
             values = ["not_checked", "NA"]
-            if self.gene in searched_genes:
+            if gene in searched_genes:
                 values[0] = "gene_checked"
             
             if values[0] != "not_checked":
                 values[1] = "FAIL"
             
-            if self.proband in matches:
-                if self.gene in matches[self.proband]:
+            if proband in matches:
+                if gene in matches[proband]:
                     values[1] = "PASS"
-        elif self.type == "scores":
-            values = [self.data[self.proband][self.gene][self.inheritance]]
+        elif datatype == "scores":
+            values = [data[proband][gene][inh]]
         
         return values
     
-    def modify_file(self):
+    def modify_file(self, datatype, labels, data):
         """ modifies the clinical reporting file, depending on the result types
+        
+        Args:
+            datatype: "matches" or "scores"
+            labels: list of new column header names
+            data: dictionary of values, indexed by proband_id, gene and
+                inheritance.
         """
         
-        f = self.start_modified_file()
+        f = self.start_modified_file(labels)
         for line in f:
             if line == "\n":
                 self.parsed_lines.append(line)
                 continue
             
             line = line.strip().split("\t")
-            self.proband = line[self.proband_column]
-            self.gene = line[self.gene_column]
-            self.inheritance = line[self.inheritance_column]
+            proband = line[self.proband_column]
+            gene = line[self.gene_column]
+            inh = line[self.inheritance_column]
             
-            insert = self.get_insert_values()
+            insert = self.get_insert_values(data, datatype, line)
             
             line += insert
             line = "\t".join(line) + "\n"
@@ -99,7 +118,7 @@ class Reporting(object):
         output.writelines(self.parsed_lines)
         output.close()
         
-        # we intially use the reporting file as input, and make a new file
+        # we initially use the reporting file as input, and make a new file
         # from that. After the first set of data has been inserted, read from
         # the modified file.
         self.report_path = self.output_path
@@ -108,30 +127,24 @@ class Reporting(object):
         """ annotates candidate variants using proband matches indexed by gene
         
         Args:
-            matches: fict of probands that were matched for each gene
+            matches: dict of probands that were matched for each gene
             searched_genes: list of searched genes, so we can add whether a
                 gene was not found because it was not searched for
             column_label: label to use in the file header
         """
         
-        self.type = "matches"
-        self.column_labels = [label + s for s in ["_searched", "_passed"]]
-        self.data = [matches, searched_genes]
-        self.modify_file()
+        label = [label + s for s in ["_searched", "_passed"]]
+        data = [matches, searched_genes]
+        self.modify_file("matches", label, data)
         
         self.report_path = self.output_path
     
-    def add_scores_to_report(self, scores, label):
+    def add_scores_to_report(self, scores, labels):
         """ annotates candidate variants using scores for each variant
         
         Args:
             scores: dict of scores, indexed by proband, gene, inheritance mode
-            label: column header label for the scores
+            labels: column header labels for the scores
         """
         
-        self.type = "scores"
-        self.column_labels = [label]
-        self.data = scores
-        self.modify_file()
-
-
+        self.modify_file("scores", labels, scores)

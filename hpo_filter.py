@@ -71,7 +71,7 @@ def main():
     # load gene HPO terms, proband HPO terms, probands with candidates in these genes
     ddg2p_genes = load_ddg2p(DDG2P_PATH)
     family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
-    genes, probands = load_clinical_filter_variants(CANDIDATE_VARIANTS_PATH)
+    probands = load_clinical_filter_variants(CANDIDATE_VARIANTS_PATH)
     all_proband_hpo_terms = load_full_proband_hpo_list(ALL_PROBAND_HPO_TERMS_PATH)
     
     # add the gene matches to the reporting file
