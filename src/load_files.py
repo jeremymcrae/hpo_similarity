@@ -3,6 +3,8 @@
 
 import sys
 
+from src.family_hpo_terms import FamilyHPO
+
 def load_ddg2p(ddg2p_path):
     """ load a DDG2P gene file, so we can extract HPO terms for each gene
     
@@ -15,19 +17,11 @@ def load_ddg2p(ddg2p_path):
     
     f = open(ddg2p_path)
     
-    # allow for gene files with different column names and positions
+    # get the positions of the columns in the header
     header = f.readline().strip().split("\t")
-    if "DDD_category" in header:
-        gene_label = "gencode_gene_name"
-        inheritance_label = "Allelic_requirement"
-        hpo_label = "HPO_ids"
-    else:
-        raise ValueError("The gene file lacks expected header column names")
-    
-    # get the positions of the columns in the list of header labels
-    gene_column = header.index(gene_label)
-    inheritance_column = header.index(inheritance_label)
-    hpo_column = header.index(hpo_label)
+    gene_column = header.index("gencode_gene_name")
+    inheritance_column = header.index("Allelic_requirement")
+    hpo_column = header.index("HPO_ids")
     
     genes = {}
     for line in f:
@@ -50,69 +44,26 @@ def load_ddg2p(ddg2p_path):
         
     return genes
 
-
-class FamilyHPO(object):
-    """small class to handle HPO terms for family members of a trio
-    """
-    
-    def __init__(self, child_hpo, maternal_hpo, paternal_hpo):
-        """initiate the class
-        
-        Args:
-            child_hpo: HPO string for the proband, eg "HP:0005487|HP:0001363"
-            maternal_hpo: string of HPO terms for the mother
-            paternal_hpo: string of HPO terms for the father
-        """
-        
-        self.child_hpo = self.format_hpo(child_hpo)
-        self.maternal_hpo = self.format_hpo(maternal_hpo)
-        self.paternal_hpo = self.format_hpo(paternal_hpo)
-    
-    def format_hpo(self, hpo_terms):
-        """ formats a string of hpo terms to a list
-        
-        Args:
-            hpo_terms: string of hpo terms joined with "|"
-        
-        Returns:
-            list of hpo terms, or None
-        """
-        
-        hpo_terms = hpo_terms.strip()
-        
-        # account for no hpo terms recorded for a person
-        if hpo_terms == ".":
-            return None
-        
-        # account for multiple hpo terms for an individual
-        if "|" in hpo_terms:
-            hpo_terms = hpo_terms.split("|")
-        else:
-            hpo_terms = [hpo_terms]
-        
-        return hpo_terms
-    
-    def get_child_hpo(self):
-        return self.child_hpo
-    
-    def get_maternal_hpo(self):
-        return self.maternal_hpo
-    
-    def get_paternal_hpo(self):
-        return self.paternal_hpo
-
-
 def load_participants_hpo_terms(pheno_path, alt_id_path):
-    """ loads patient data, and obtains
+    """ loads patient HPO terms
+    
+    Args:
+        pheno_path: path to patient pheotype file, containing one line per
+            proband, with HPO codes as a field in the line.
+        alt_id_path: path to set of alternate IDs for each individual
+    
+    Returns:
+        dictionary of FamilyHPO objects (containing HPO codes for trio members),
+        indexed by proband ID.
     """
     
     alt_ids = load_alt_id_map(alt_id_path)
     
     # load the phenotype data for each participant
     f = open(pheno_path)
-    header = f.readline().strip().split("\t")
     
     # get the positions of the columns in the list of header labels
+    header = f.readline().strip().split("\t")
     proband_column = header.index("patient_id")
     child_hpo_column = header.index("child_hpo")
     maternal_hpo_column = header.index("maternal_hpo")
@@ -134,43 +85,15 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
     
     return participant_hpo
 
-def load_participants_phenotypes(pheno_path, alt_id_path):
-    """ loads patient data, and obtains
-    """
-    
-    alt_ids = load_alt_id_map(alt_id_path)
-    
-    # load the phenotype data for each participant
-    f = open(pheno_path)
-    
-    # allow for gene files with different column names and positions
-    header = f.readline().strip().split("\t")
-    
-    # get the positions of the columns in the list of header labels
-    proband_column = header.index("patient_id")
-    height_column = header.index("height_sd")
-    weight_column = header.index("weight_sd")
-    ofc_column = header.index("ofc_sd")
-    
-    phenotypes = {}
-    for line in f:
-        line = line.split("\t")
-        proband_id = line[proband_column]
-        height_sd = line[height_column]
-        weight_sd = line[weight_column]
-        ofc_sd = line[ofc_column]
-        
-        # swap the proband across to the DDD ID if it exists
-        if proband_id in alt_ids:
-            proband_id = alt_ids[proband_id]
-        
-        phenotypes[proband_id] = {"height": height_sd, "weight": weight_sd, \
-            "ofc": ofc_sd}
-    
-    return phenotypes
-
 def load_alt_id_map(alt_id_path):
     """ loads the decipher to DDD ID mapping file
+    
+    Args:
+        alt_id_path: path to file containing alternate IDs (ie DECIPHER IDs) for
+            each proband
+    
+    Returns:
+        dictionary of DDD Ids, indexed by their DECIPHER ID.
     """
     
     alt_ids = {}
@@ -188,23 +111,27 @@ def load_alt_id_map(alt_id_path):
     
     return alt_ids
 
-def load_candidate_genes(candidate_genes_path):
-    """ loads candidate genes for the participants
+def load_clinical_filter_variants(path):
+    """ loads the genes for variants passing clinical filtering for each proband
+    
+    Args:
+        path: path to clinical filtering output
+    
+    Returns:
+        dictionary of [(gene, inheritance)] tuple lists, indexed by proband
     """
     
-    f = open(candidate_genes_path)
+    f = open(path)
     header = f.readline().strip().split("\t")
     
     proband_column = header.index("proband")
     gene_column = header.index("gene")
     inheritance_column = header.index("inheritance")
     
-    genes_index = {}
-    probands_index = {}
+    probands = {}
     
     for line in f:
-        # ignore blank lines
-        if line == "\n":
+        if line == "\n": # ignore blank lines
             continue
         
         line = line.strip().split("\t")
@@ -212,96 +139,13 @@ def load_candidate_genes(candidate_genes_path):
         gene = line[gene_column]
         inheritance = line[inheritance_column]
         
-        if gene not in genes_index:
-            genes_index[gene] = set()
-         
-        if proband_ID not in probands_index:
-            probands_index[proband_ID] = set()
-         
-        genes_index[gene].add((proband_ID, inheritance))
-        probands_index[proband_ID].add((gene, inheritance))
+        if proband_ID not in probands:
+            probands[proband_ID] = set()
+        
+        probands[proband_ID].add((gene, inheritance))
     
-    return genes_index, probands_index
+    return probands
 
-def load_obligate_terms(obligate_path):
-    """ loads a list of HPO terms for specific genes that affected people must have
-    """
-    
-    f = open(obligate_path)
-    header = f.readline().strip().split("\t")
-    
-    # pull out the column numbers from the header
-    gene_label = "gene"
-    hpo_label = "hpo_id"
-    gene_column = header.index(gene_label)
-    hpo_column = header.index(hpo_label)
-    
-    obligate_genes = {}
-    for line in f:
-        line = line.strip().split("\t")
-        gene = line[gene_column]
-        hpo_term = line[hpo_column]
-        
-        if gene not in obligate_genes:
-            obligate_genes[gene] = []
-        
-        obligate_genes[gene].append(hpo_term)
-    
-    return obligate_genes
-    
-def load_organ_terms(organ_to_hpo_mapper_path, ddg2p_organ_path):
-    """ loads dict of hpo terms specific for DDG2P genes
-    
-    Args:
-        organ_to_hpo_mapper_path: path to file listing HPO terms for abnormality for each organ
-        ddg2p_organ_path: path to file listing organ abnormalities for ddg2p genes
-    
-    Returns:
-        dictionary of hpo lists indexed by gene
-    """
-    
-    f = open(organ_to_hpo_mapper_path)
-    header = f.readline().strip().split("\t")
-    organ_label = "organ"
-    hpo_label = "hpo_id"
-    organ_column = header.index(organ_label)
-    hpo_column = header.index(hpo_label)
-    
-    # pull out the hpo terms that match organ labels
-    organ_map = {}
-    for line in f:
-        line = line.strip().split("\t")
-        organ = line[organ_column]
-        hpo_term = line[hpo_column]
-        
-        organ_map[organ] = hpo_term
-    
-    # now open the list of ddg2p genes with their suggested organs
-    f = open(ddg2p_organ_path)
-    header = f.readline().strip().split("\t")
-    gene_label = "gene"
-    organ_label = "organ"
-    gene_column = header.index(gene_label)
-    organ_column = header.index(organ_label)
-    
-    obligate_organs = {}
-    for line in f:
-        line = line.strip().split("\t")
-        gene = line[gene_column]
-        organ = line[organ_column]
-        
-        if organ in organ_map:
-            hpo_term = organ_map[organ]
-        else:
-            sys.exit("Unknown organ for DDG2P gene: " + gene + ", in: " + organ)
-        
-        if gene not in obligate_organs:
-            obligate_organs[gene] = []
-        
-        obligate_organs[gene].append(hpo_term)
-    
-    return obligate_organs
-        
 def load_full_proband_hpo_list(path):
     """ loads a set of hpo terms from all probands recruited to date
     

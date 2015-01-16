@@ -286,8 +286,6 @@ class ICSimilarity(CalculateSimilarity):
                 informative_term = term
                 max_IC = ic
         
-        # print("max_IC value =", max_IC)
-        
         return informative_term
     
     def calculate_information_content(self, term):
