@@ -3,7 +3,7 @@
 
 import networkx as nx
 
-import obo
+from src.obo import Parser
 
 
 class loadHPONetwork(object):
@@ -30,7 +30,7 @@ class loadHPONetwork(object):
             hpo_entries: list of entries in HPO database
         """
         
-        parser = obo.Parser(hpo_path)
+        parser = Parser(hpo_path)
         hpo_entries = []
         for entry in parser:
             hpo_entries.append(entry)

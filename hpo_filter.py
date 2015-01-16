@@ -18,14 +18,14 @@
 import os
 import sys
 
-from load_files import load_ddg2p, load_participants_hpo_terms, \
+from src.load_files import load_ddg2p, load_participants_hpo_terms, \
     load_candidate_genes, load_full_proband_hpo_list, load_obligate_terms, \
     load_organ_terms
-from create_hpo_graph import loadHPONetwork
-from match_hpo import CheckHPOMatches
-from hpo_similarity import ICSimilarity, ICDistanceSimilarity, \
+from src.create_hpo_graph import loadHPONetwork
+from src.match_hpo import CheckHPOMatches
+from src.similarity import ICSimilarity, ICDistanceSimilarity, \
     PathLengthSimilarity, JaccardSimilarity
-from hpo_filter_reporting import Reporting
+from src.reporting import Reporting
 
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")

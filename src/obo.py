@@ -45,6 +45,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from __future__ import print_function
+
+import sys
+IS_PYTHON3 = sys.version_info[0] == 3
+
 __author__  = "Tamas Nepusz"
 __email__   = "tamas@cs.rhul.ac.uk"
 __copyright__ = "Copyright (c) 2009, Tamas Nepusz"
@@ -54,8 +59,11 @@ __version__ = "0.1"
 
 __all__ = ["ParseError", "Stanza", "Parser", "Value"]
 
-
-from cStringIO import StringIO
+if IS_PYTHON3:
+    import io
+    StringIO = io.StringIO
+else:
+    from cStringIO import StringIO
 import re
 import tokenize
 
@@ -115,7 +123,7 @@ class Stanza(object):
 
       >>> stanza.name
       "Term"
-      >>> print stanza.tags["id"]
+      >>> print(stanza.tags["id"])
       ['GO:0015036']
       >>> print stanza.tags["name"]
       ['disulfide oxidoreductase activity']
@@ -162,7 +170,9 @@ class Parser(object):
         parser as if it were a list. The iterator yields `Stanza`
         objects.
         """
-        if isinstance(fp, (str, unicode)):
+        if IS_PYTHON3 and isinstance(fp, str):
+            fp = open(fp)
+        elif isinstance(fp, (str, unicode)):
             fp = open(fp)
         self.fp = fp
         self.line_re = re.compile(r"\s*(?P<tag>[^:]+):\s*(?P<value>.*)")
@@ -280,22 +290,21 @@ def test():
     count = 0
     
     for header_id in parser.headers:
-        print header_id, parser.headers[header_id]
+        print(header_id, parser.headers[header_id])
     
     names = set()
     for stanza in parser:
         count += 1
         if count % 1000 == 0:
-            print "%d stanzas processed" % count
+            print("%d stanzas processed" % count)
         
         # print stanza
         names.update(stanza.tags.keys())
-    print "Parsing successful, %d stanzas" % count
-    print 
-    print names
+    print("Parsing successful, %d stanzas" % count)
+    print()
+    print(names)
 
 
 if __name__ == "__main__":
     import sys
     sys.exit(test())
-
