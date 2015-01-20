@@ -1,7 +1,12 @@
 """ loads a HPO OBO file as a graph network
 """
 
-import networkx as nx
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import networkx
 
 from src.obo import Parser
 
@@ -108,7 +113,7 @@ class loadHPONetwork(object):
             networkx graph object
         """
         
-        graph = nx.DiGraph()
+        graph = networkx.DiGraph()
         
         # add the hpo header values as attributes for the graph
         for header_id in self.hpo_header:

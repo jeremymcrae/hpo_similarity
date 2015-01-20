@@ -2,11 +2,16 @@
 http://stackoverflow.com/questions/3679694/a-weighted-version-of-random-choice
 """
 
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import random
 import bisect
 
 class WeightedChoice(object):
-    """ class for weighted choices, rather than a function, so we don't have to 
+    """ class for weighted choices, rather than a function, so we don't have to
     keep resumming the weights.
     """
     
