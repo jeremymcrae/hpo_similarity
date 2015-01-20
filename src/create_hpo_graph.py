@@ -16,8 +16,9 @@ class loadHPONetwork(object):
         self.hpo_header, self.hpo_list = self.load_hpo_database(hpo_path)
         
         # track alternate HPO IDs (since we use HPO IDs as node IDs)
-        self.alt_id_mapper = {}
-        self.ref_id_mapper = {}
+        self.alt_ids = {}
+        self.ref_ids = {}
+        self.obsolete_ids = set()
     
     def load_hpo_database(self, hpo_path):
         """ load the human phenotype ontology (HPO) database in obo format
@@ -77,14 +78,14 @@ class loadHPONetwork(object):
         if "alt_id" in obo_tags:
             for alt_id in obo_tags["alt_id"]:
                 alt_id = str(alt_id)
-                self.alt_id_mapper[alt_id] = node_id
+                self.alt_ids[alt_id] = node_id
                 
-                if node_id not in self.ref_id_mapper:
-                    self.ref_id_mapper[node_id] = []
+                if node_id not in self.ref_ids:
+                    self.ref_ids[node_id] = []
                 
-                self.ref_id_mapper[node_id].append(alt_id)
+                self.ref_ids[node_id].append(alt_id)
 
-    def check_if_obsolete(self, obo_tags):
+    def is_obsolete(self, obo_tags):
         """ checks if an "is_obsolete" flag is in the tags for an obo entry
         
         Args:
@@ -94,9 +95,9 @@ class loadHPONetwork(object):
             True/False for whether the entry is obsolete
         """
         
-        if "is_obsolete" in obo_tags:
-            if str(obo_tags["is_obsolete"][0]) == "true":
-                return True
+        if "is_obsolete" in obo_tags and str(obo_tags["is_obsolete"][0]) == "true":
+            self.obsolete_ids.add(str(obo_tags["id"][0]))
+            return True
         
         return False
 
@@ -116,7 +117,7 @@ class loadHPONetwork(object):
         for entry in self.hpo_list:
             tags = entry.tags
             # ignore obsolete HPO entries
-            if self.check_if_obsolete(tags):
+            if self.is_obsolete(tags):
                 continue
             
             node_id = str(tags["id"][0])
@@ -140,4 +141,10 @@ class loadHPONetwork(object):
         """ passes the alt ID dictionary for external functions
         """
         
-        return self.alt_id_mapper
+        return self.alt_ids
+    
+    def get_obsolete_ids(self):
+        """ returns the set of obsolete tags
+        """
+        
+        return self.obsolete_ids

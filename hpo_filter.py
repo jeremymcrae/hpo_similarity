@@ -65,10 +65,11 @@ def main():
     hpo_file = loadHPONetwork(HPO_PATH)
     graph = hpo_file.get_graph()
     alt_node_ids = hpo_file.get_alt_ids()
+    obsolete_ids = hpo_file.get_obsolete_ids()
     
     # load gene HPO terms, proband HPO terms, probands with candidates in these genes
     ddg2p_genes = load_ddg2p(DDG2P_PATH)
-    family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH)
+    family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, alt_node_ids, obsolete_ids)
     probands = load_clinical_filter_variants(CANDIDATE_VARIANTS_PATH)
     
     # add the gene matches to the reporting file
@@ -77,16 +78,20 @@ def main():
     
     # # now look for similarity scores
     # matcher = ICSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
-    # scores_IC = matcher.get_similarity_scores(probands)
+    # matcher.tally_hpo_terms(ddg2p_genes, source="ddg2p")
+    # scores_IC = matcher.get_similarity_scores(ddg2p_genes, probands)
     #
     # matcher = ICDistanceSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
-    # scores_distance = matcher.get_similarity_scores(probands)
+    # matcher.tally_hpo_terms(ddg2p_genes, source="ddg2p")
+    # scores_distance = matcher.get_similarity_scores(ddg2p_genes, probands)
     
-    matcher = PathLengthSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
-    scores_length = matcher.get_similarity_scores(probands)
+    matcher = PathLengthSimilarity(family_hpo_terms, graph, alt_node_ids)
+    matcher.tally_hpo_terms(ddg2p_genes, source="ddg2p")
+    scores_length = matcher.get_similarity_scores(ddg2p_genes, probands)
     
     # matcher = JaccardSimilarity(family_hpo_terms, ddg2p_genes, graph, alt_node_ids)
-    # scores_jaccard = matcher.get_similarity_scores(probands)
+    # matcher.tally_hpo_terms(ddg2p_genes, source="ddg2p")
+    # scores_jaccard = matcher.get_similarity_scores(ddg2p_genes, probands)
     
     # report.add_scores_to_report(scores_IC, "similarity_max_IC")
     # report.add_scores_to_report(scores_distance, "similarity_max_distance")

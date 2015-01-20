@@ -44,18 +44,25 @@ def load_ddg2p(ddg2p_path):
         
     return genes
 
-def load_participants_hpo_terms(pheno_path, alt_id_path):
+def load_participants_hpo_terms(pheno_path, alt_id_path, alt_node_ids, obsolete_ids):
     """ loads patient HPO terms
     
     Args:
         pheno_path: path to patient pheotype file, containing one line per
             proband, with HPO codes as a field in the line.
         alt_id_path: path to set of alternate IDs for each individual
+        alt_ids: dict to map HPO terms from their alt_id, to their current ID
+        obsolete_ids: set of obsolete HPO IDs
     
     Returns:
         dictionary of FamilyHPO objects (containing HPO codes for trio members),
         indexed by proband ID.
     """
+    
+    # use the alt HPO terms and obsolete node Ids in the FamilyHPO class, to be
+    # shared among all instances
+    FamilyHPO.alt_ids = alt_node_ids
+    FamilyHPO.obsolete_ids = obsolete_ids
     
     alt_ids = load_alt_id_map(alt_id_path)
     
@@ -76,6 +83,10 @@ def load_participants_hpo_terms(pheno_path, alt_id_path):
         child_hpo = line[child_hpo_column]
         maternal_hpo = line[maternal_hpo_column]
         paternal_hpo = line[paternal_hpo_column]
+        
+        # don't bother to use probands who lack HPO terms
+        if child_hpo == "NA":
+            continue
         
         # swap the proband across to the DDD ID if it exists
         if proband_id in alt_ids:
@@ -145,28 +156,6 @@ def load_clinical_filter_variants(path):
         probands[proband_ID].add((gene, inheritance))
     
     return probands
-
-def load_full_proband_hpo_list(path):
-    """ loads a set of hpo terms from all probands recruited to date
-    
-    Args:
-        path: path to proband phenotype file
-    
-    Returns:
-        list of (proband, hpo_term) tuples
-    """
-    
-    f = open(path, "r")
-    
-    hpo_list = []
-    for line in f:
-        line = line.strip().split("\t")
-        proband = line[0]
-        hpo_term = line[2]
-        
-        hpo_list.append((proband, hpo_term))
-    
-    return hpo_list
 
 def load_de_novos(path):
     """ load de novos found in probands

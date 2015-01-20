@@ -2,15 +2,19 @@
 genes predicted to be relevant to them.
 """
 
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import math
-import networkx as nx
-    
+import networkx
 
 class CalculateSimilarity(object):
     """ calculate graph similarity scores
     """
     
-    def __init__(self, family_hpos, ddg2p_genes, hpo_graph, alt_node_ids, proband_phenotypes):
+    def __init__(self, family_hpos, hpo_graph, alt_node_ids):
         """
         
         Args:
@@ -19,20 +23,18 @@ class CalculateSimilarity(object):
         """
         
         self.graph = hpo_graph
-        self.ddg2p_genes = ddg2p_genes
         self.family_hpos = family_hpos
         self.alt_node_ids = alt_node_ids
         
-        self.graph_depth = nx.eccentricity(self.graph, v="HP:0000001")
+        self.graph_depth = networkx.eccentricity(self.graph, v="HP:0000001")
         
-        self.ic_cache = {}
         self.descendant_cache = {}
         self.ancestor_cache = {}
-        self.path_cache = {}
         
-        self.tally_hpo_terms()
+        self.hpo_counts = {}
+        self.total_freq = 0
     
-    def get_similarity_scores(self, probands):
+    def get_similarity_scores(self, ddg2p, probands):
         """ determines similarity scores for the probands
         
         Args:
@@ -45,11 +47,11 @@ class CalculateSimilarity(object):
         
         scores = {}
         for proband in probands:
-            scores[proband] = self.get_proband_score(proband, probands[proband])
+            scores[proband] = self.get_proband_score(ddg2p, proband, probands[proband])
         
         return scores
     
-    def get_proband_score(self, proband_ID, genes):
+    def get_proband_score(self, ddg2p, proband_ID, genes):
         """ calculate the similarity scores for the genes found for a proband
         
         Args:
@@ -67,22 +69,22 @@ class CalculateSimilarity(object):
                 inheritances = inheritance.split(",")
                 gene_terms = []
                 for inh in inheritances:
-                    gene_terms += self.get_gene_hpo_terms(name, inh)
+                    gene_terms += self.get_gene_hpo_terms(ddg2p, name, inh)
             else:
-                gene_terms = self.get_gene_hpo_terms(name, inheritance)
+                gene_terms = self.get_gene_hpo_terms(ddg2p, name, inheritance)
             
             proband_terms = self.family_hpos[proband_ID].get_child_hpo()
             
             max_values = []
             for proband_term in proband_terms:
-                proband_term = self.fix_alternate_ID(proband_term)
+                proband_term = self.fix_alternate_id(proband_term)
                 # for each proband HPO term, we look for the highest value
                 # across all the HPO terms for the gene
                 max_value = None
                 for gene_term in gene_terms:
                     if gene_term == "":
                         continue
-                    gene_term = self.fix_alternate_ID(gene_term)
+                    gene_term = self.fix_alternate_id(gene_term)
                     max_value = self.update_value(proband_term, gene_term, max_value)
                 
                 # only include the IC value if we actually found one (avoids
@@ -101,7 +103,7 @@ class CalculateSimilarity(object):
         
         return similarity_scores
     
-    def fix_alternate_ID(self, term):
+    def fix_alternate_id(self, term):
         """ converts HPO terms using alternate IDs to the standard term
         
         some of the HPO terms recorded for the probands, or in the DDG2P
@@ -109,12 +111,16 @@ class CalculateSimilarity(object):
         standard HPO term, as these are the node names in the HPO graph.
         """
         
-        if term in self.alt_node_ids:
+        if self.graph.has_node(term):
+            pass
+        elif term in self.alt_node_ids:
             term = self.alt_node_ids[term]
+        else:
+            raise KeyError
         
         return term
     
-    def get_gene_hpo_terms(self, gene_name, inheritance):
+    def get_gene_hpo_terms(self, ddg2p, gene_name, inheritance):
         """ pulls out the hpo terms for a DDG2P gene
         
         Sometimes the DDG2P database does not have the inheritance mode
@@ -130,40 +136,62 @@ class CalculateSimilarity(object):
             inheritance: the inheritance mode listed for the gene
         """
         
-        if gene_name not in self.ddg2p_genes:
+        if gene_name not in ddg2p:
             gene_terms = []
-        elif inheritance not in self.ddg2p_genes[gene_name]:
+        elif inheritance not in ddg2p[gene_name]:
             if inheritance == "X-linked dominant":
-                gene_terms = self.ddg2p_genes[gene_name]["Monoallelic"]
-            elif "Both" in self.ddg2p_genes[gene_name]:
+                gene_terms = ddg2p[gene_name]["Monoallelic"]
+            elif "Both" in ddg2p[gene_name]:
                 if inheritance == "Monoallelic" or inheritance == "Biallelic":
-                    gene_terms = self.ddg2p_genes[gene_name]["Both"]
+                    gene_terms = ddg2p[gene_name]["Both"]
             else:
                 print("missing another type")
                 gene_terms = []
-        elif inheritance in self.ddg2p_genes[gene_name]:
-            gene_terms = self.ddg2p_genes[gene_name][inheritance]
+        elif inheritance in ddg2p[gene_name]:
+            gene_terms = ddg2p[gene_name][inheritance]
         
         return gene_terms
     
-    def tally_hpo_terms(self):
+    def tally_hpo_terms(self, hpo_terms, source="ddg2p"):
         """ tallies each HPO term across the DDG2P genes
         
         Args:
-            genes: hpo term dictionary
+            hpo_terms: hpo term dictionary
         """
         
-        self.hpo_counts = {}
-        self.total_freq = 0.0
+        assert source in ["ddg2p", "child_hpo"]
         
-        for gene in self.ddg2p_genes:
-            for mode in self.ddg2p_genes[gene]:
-                for term in self.ddg2p_genes[gene][mode]:
-                    if term not in self.hpo_counts:
-                        self.hpo_counts[term] = 0.0
-                    
-                    self.hpo_counts[term] += 1
-                    self.total_freq += 1
+        for item in hpo_terms:
+            if source == "ddg2p":
+                for mode in hpo_terms[item]:
+                    for term in hpo_terms[item][mode]:
+                        self.add_hpo(term)
+            elif source == "child_hpo":
+                child_terms = hpo_terms[item].get_child_hpo()
+                for term in child_terms:
+                    self.add_hpo(term)
+    
+    def add_hpo(self, term):
+        """ increments the count for an HPO term
+        
+        This increments a) the count for the specific term, and b) the total
+        count of all terms.
+        
+        Args:
+            term: string for HPO term
+        """
+        
+        if term not in self.hpo_counts:
+            # don't use terms which cannot be placed on the graph
+            if not self.graph.has_node(term):
+                return
+            
+            if term not in self.hpo_counts:
+                self.hpo_counts[term] = 0
+            
+            self.hpo_counts[term] += 1
+        
+        self.total_freq += 1
     
     def get_subterms(self, top_term):
         """ finds the set of subterms that descend from a top level HPO term
@@ -175,13 +203,10 @@ class CalculateSimilarity(object):
             set of descendant HPO terms
         """
         
-        if top_term in self.descendant_cache:
-            subterms = self.descendant_cache[top_term]
-        else:
-            subterms = nx.descendants(self.graph, top_term)
-            self.descendant_cache[top_term] = subterms
+        if top_term not in self.descendant_cache:
+            self.descendant_cache[top_term] = networkx.descendants(self.graph, top_term)
         
-        return subterms
+        return self.descendant_cache[top_term]
     
     def get_ancestors(self, bottom_term):
         """ finds the set of subterms that are ancestors of a HPO term
@@ -194,13 +219,11 @@ class CalculateSimilarity(object):
         """
         
         if bottom_term not in self.ancestor_cache:
-            subterms = nx.ancestors(self.graph, bottom_term)
+            subterms = networkx.ancestors(self.graph, bottom_term)
             subterms.add(bottom_term)
             self.ancestor_cache[bottom_term] = subterms
         
-        subterms = self.ancestor_cache[bottom_term]
-        
-        return subterms
+        return self.ancestor_cache[bottom_term]
     
     def find_common_ancestors(self, term_1, term_2):
         """ finds the common ancestors of two hpo terms
@@ -217,23 +240,27 @@ class CalculateSimilarity(object):
         if term_1 not in self.graph or term_2 not in self.graph:
             return set()
         
-        term1_ancestors = set(self.get_ancestors(term_1))
-        term2_ancestors = set(self.get_ancestors(term_2))
-        
-        return term1_ancestors & term2_ancestors
+        return set(self.get_ancestors(term_1)) & set(self.get_ancestors(term_2))
     
 
 class ICSimilarity(CalculateSimilarity):
     """ calculate similarity by IC score
     """
     
-    def find_most_informative_term(self):
+    counts_cache = {}
+    ic_cache = {}
+    
+    def find_most_informative_term(self, terms=None):
         """ find the most infomative HPO term in the probands
         """
         
         informative_term = ""
         max_IC = 0
-        for term in self.hpo_counts:
+        
+        if terms is None:
+            terms = self.hpo_counts
+        
+        for term in terms:
             ic = self.calculate_information_content(term)
             if ic > max_IC:
                 informative_term = term
@@ -255,22 +282,42 @@ class ICSimilarity(CalculateSimilarity):
         """
         
         if term not in self.ic_cache:
+            term_count = self.get_term_count(term)
+            
             if term not in self.graph:
                 return 0
-            
-            descendants = self.get_subterms(term)
-            
-            term_count = 1.0
-            if term in self.hpo_counts:
-                term_count += self.hpo_counts[term]
-            for subterm in descendants:
-                if subterm in self.hpo_counts:
-                    term_count += self.hpo_counts[subterm]
             
             # cache the IC, so we don't have to recalculate for the term
             self.ic_cache[term] = -math.log(term_count/self.total_freq)
         
         return self.ic_cache[term]
+    
+    def get_term_count(self, term):
+        """ Count how many times a term (or its subterms) was used.
+        
+        Args:
+            term: hpo term, eg HP:0000001
+        
+        Returns:
+            the number of times a term (or its subterms) was used.
+        """
+        
+        if term not in self.counts_cache:
+            if term not in self.graph:
+                return 0
+            
+            descendants = self.get_subterms(term)
+            
+            count = 0
+            if term in self.hpo_counts:
+                count += self.hpo_counts[term]
+            for subterm in descendants:
+                if subterm in self.hpo_counts:
+                    count += self.hpo_counts[subterm]
+            
+            self.counts_cache[term] = count
+        
+        return self.counts_cache[term]
     
     def update_value(self, term_1, term_2, max_ic):
         """ finds the maximum information content value between two hpo terms
@@ -342,9 +389,11 @@ class ICDistanceSimilarity(ICSimilarity):
         return max_distance
 
 
-class PathLengthSimilarity(CalculateSimilarity):
+class PathLengthSimilarity(ICSimilarity):
     """ calculate similarity score by path length
     """
+    
+    path_cache = {}
     
     def get_shortest_path(self, term_1, term_2):
         """ finds the shortest path between two terms (and caches the result)
@@ -354,17 +403,42 @@ class PathLengthSimilarity(CalculateSimilarity):
             term_2: HPO ID for graph node
         
         Returns:
+            list of nodes for path
+        """
+        
+        term_1 = self.fix_alternate_id(term_1)
+        term_2 = self.fix_alternate_id(term_2)
+        
+        if (term_1, term_2) not in self.path_cache:
+            try:
+                path = networkx.shortest_path(self.graph, term_1, term_2)
+            except networkx.exception.NetworkXNoPath:
+                path = self.get_path_between_nondescendants(term_1, term_2)
+                
+            self.path_cache[(term_1, term_2)] = path
+            self.path_cache[(term_2, term_1)] = path
+        
+        return self.path_cache[(term_1, term_2)]
+    
+    def get_path_between_nondescendants(self, term_1, term_2):
+        """ gets the shortest path between terms not from the same branch
+        
+        Args:
+            term_1: HPO ID for graph node
+            term_2: HPO ID for graph node
+        
+        Returns:
             shortest_path: list of nodes for path
         """
         
-        if (term_1, term_2) not in self.path_cache:
-            path = nx.shortest_path(self.graph, term_1, term_2)
-            self.path_cache[(term_1, term_2)] = path
-            self.path_cache[(term_2, term_1)] = path
-       
-        shortest_path = self.path_cache[(term_1, term_2)]
+        common_terms = self.find_common_ancestors(term_1, term_2)
+        ancestor = self.find_closest_ancestor(term_1, common_terms)
         
-        return shortest_path
+        # get the paths from the two terms to their closest ancestor
+        path_1 = self.get_shortest_path(ancestor, term_1)[::-1]
+        path_2 = self.get_shortest_path(ancestor, term_2)
+        
+        return path_1[:-1] + path_2
     
     def find_closest_ancestor(self, node, ancestors):
         """ finds the closest ancestor of a term from a list of ancestor terms
@@ -412,19 +486,10 @@ class PathLengthSimilarity(CalculateSimilarity):
             the maximum path length between the two terms
         """
         
-        common_terms = self.find_common_ancestors(term_1, term_2)
-        
-        if len(common_terms) == 0:
-            return max_length
-        
-        ancestor = self.find_closest_ancestor(term_1, common_terms)
-        
-        # get the paths from the two terms to their closest ancestor
-        path_1 = self.get_shortest_path(ancestor, term_1)
-        path_2 = self.get_shortest_path(ancestor, term_2)
-        
         # find the shortest path length between the nodes
-        path_length = float(len(path_1 + path_2) - 1) # -1 as ancestor is included twice
+        path = self.get_path_between_nondescendants(term_1, term_2)
+        
+        path_length = float(len(path))
         value = -math.log(path_length/(2 * self.graph_depth))
         
         if max_length is None or value > max_length:
