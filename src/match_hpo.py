@@ -165,4 +165,3 @@ class CheckHPOMatches(object):
         
         return self.node_positions[top_term]
         
-
