@@ -20,9 +20,12 @@ import argparse
 import bisect
 import itertools
 import math
+import random
 
-import matplotlib
-matplotlib.use("Agg")
+from matplotlib import use
+use("Agg")
+from matplotlib import pyplot
+from matplotlib import lines
 import networkx
 
 from src.load_files import load_participants_hpo_terms, load_de_novos
@@ -106,6 +109,14 @@ def get_ic_from_closest_ancestor(matcher, proband_term, other_terms):
         ic.append(matcher.calculate_information_content(ancestor))
     
     return max(ic)
+
+def geomean(values):
+    
+    values = [math.log10(x) for x in values]
+    
+    mean = sum(values)/float(len(values))
+    
+    return 10**mean
     
 def calculate_hpo_prob(matcher, hpo_terms):
     """ calculate the total information content across a list of HPO lists.
@@ -133,17 +144,25 @@ def calculate_hpo_prob(matcher, hpo_terms):
         proband = hpo_terms[pos]
         
         # remove the proband, and and preceeding probands, so we
-        #   a) don't try to check for matches from an idental list
+        #   a) don't try to check for matches from an identical list
         #   b) don't check probands for whom we already have results
-        others = [x for i,x in enumerate(hpo_terms) if i > pos]
-        for term in proband:
-            for other in others:
+        others = [x for i,x in enumerate(hpo_terms) if i != pos]
+        proband_probs = []
+        for other in others:
+            other_probs = []
+            for term in proband:
+                # for other in others:
                 ic = get_ic_from_closest_ancestor(matcher, term, other)
-                log_probs.append(ic)
+                other_probs.append(ic)
+            proband_probs.append(geomean(other_probs))
+        log_probs.append(geomean(proband_probs))
+    
+    print(log_probs)
     
     return sum(log_probs)
 
-def simulate_hpo_terms(sampler, lengths):
+# def simulate_hpo_terms(sampler, lengths):
+def simulate_hpo_terms(family_hpo, probands, other_probands):
     """ simulate a list of list of HPO terms, using the true number of terms.
     
     For simulations, we want as many simulated probands as we have observed, and
@@ -161,10 +180,14 @@ def simulate_hpo_terms(sampler, lengths):
         list of HPO terms lists eg [[HP:1, HP:2, HP:3], [HP:4, HP:5]]
     """
     
-    simulated_list = []
-    for length in lengths:
-        a = [sampler.choice() for x in range(0, length)]
-        simulated_list.append(a)
+    
+    sampled = random.sample(other_probands, len(probands))
+    simulated_list = [family_hpo[x].get_child_hpo() for x in sampled]
+    
+    # simulated_list = []
+    # for length in lengths:
+    #     a = [sampler.choice() for x in range(0, length)]
+    #     simulated_list.append(a)
     
     return simulated_list
 
@@ -189,21 +212,26 @@ def analyse_probands(matcher, sampler, family_hpo, probands):
         return None, None, None
     
     hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
-    lengths = [len(x) for x in hpo_terms]
+    other_probands = [x for x in family_hpo if x not in probands]
+    
+    observed = calculate_hpo_prob(matcher, hpo_terms)
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
-    for x in range(1000):
-        simulated = simulate_hpo_terms(sampler, lengths)
+    for x in range(100):
+        # simulated = simulate_hpo_terms(sampler, lengths)
+        simulated = simulate_hpo_terms(family_hpo, hpo_terms, other_probands)
         predicted = calculate_hpo_prob(matcher, simulated)
         distribution.append(predicted)
     distribution = sorted(distribution)
     
-    observed = calculate_hpo_prob(matcher, hpo_terms)
+    print(distribution, observed)
     
     # figure out where in the distribution the observed value occurs
     pos = bisect.bisect_left(distribution, observed)
     sim_prob = (abs(pos - len(distribution)))/(1 + len(distribution))
+    
+    print(sim_prob)
     
     return sim_prob
 
@@ -221,37 +249,41 @@ def analyse_de_novos(matcher, family_hpo, de_novos):
             those genes
     """
     
-    # set up a class that we can use to randomly sample HPO terms, weighted
-    # according to the probability that the term was used in the probands
-    max_rate = 0
-    rates = []
-    for term in matcher.hpo_counts:
-        # get the probability that the HPO term was used in all probands
-        rate = matcher.get_term_count(term)/len(family_hpo)
-        rates.append((term, rate))
-    sampler = WeightedChoice(rates)
+    # # set up a class that we can use to randomly sample HPO terms, weighted
+    # # according to the probability that the term was used in the probands
+    # max_rate = 0
+    # rates = []
+    # for term in matcher.hpo_counts:
+    #     # get the probability that the HPO term was used in all probands
+    #     rate = matcher.get_term_count(term)/len(family_hpo)
+    #     rates.append((term, rate))
+    # sampler = WeightedChoice(rates)
     
-    gene = "KCNH1"
-    probands = de_novos[gene]
-    hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
+    sampler = None
     
-    plot_graph(gene, matcher, hpo_terms)
+    output = open("de_novo_analysis.test.txt", "w")
+    for gene in sorted(de_novos):
+        gene = "ARID1B"
+        probands = de_novos[gene]
+        if len(probands) == 1:
+            continue
+        
+        print(gene)
+        # hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
+        # plot_graph(gene, matcher, hpo_terms)
+        p_value = analyse_probands(matcher, sampler, family_hpo, probands)
+        
+        if p_value is None:
+            continue
+            
+        output.write("{0}\t{1}\n".format(gene, p_value))
+        print(gene, p_value)
+        break
     
-    # # output = open("de_novo_analysis.test.txt", "w")
-    # for gene in sorted(de_novos):
-    #     probands = de_novos[gene]
-    #     p_value = analyse_probands(matcher, sampler, family_hpo_terms, probands)
-    #
-    #     if p_value is None:
-    #         continue
-    #
-    #     # output.write("{0}\t{1}\n".format(gene, p_value))
-    #     print(gene, p_value)
-    #
-    # # output.close()
+    output.close()
 
 def plot_graph(gene, matcher, hpo):
-    """
+    """ plots the HPO terms used in a set of probands as a tree
     
     Args:
         gene: gene name as string
@@ -268,13 +300,13 @@ def plot_graph(gene, matcher, hpo):
     
     # get a graph that has unneeded terms removed
     nodes = matcher.graph.nodes()
-    [g.remove_node(node) for node in nodes if node not in all_terms]
+    [g.remove_node(node) for node in nodes if node not in set(all_terms)]
     
     # plot the network as a hierarchy (ie tree) of nodes,
     pos = networkx.graphviz_layout(g, prog='dot')
     networkx.draw_networkx_nodes(g, pos, with_labels=False, node_color="white", \
         node_size=50, alpha=0.5)
-    networkx.draw_networkx_edges(g, pos, width=0.4, alpha=0.5)
+    networkx.draw_networkx_edges(g, pos, width=0.4, alpha=0.5, arrows=False)
     
     # scale the size of the plotted point by how many times the term was used
     terms = sorted(set(all_hpo))
@@ -284,18 +316,28 @@ def plot_graph(gene, matcher, hpo):
     ic = [matcher.calculate_information_content(x) for x in terms]
     colors = ["#{0:02x}{0:02x}{0:02x}".format(int(255 - (23 * x))) for x in ic]
     
-    # now draw the adges between the HPO terms that were used in the probands
+    # now draw the HPO terms that were used in the probands
     networkx.draw_networkx_nodes(g, pos, nodelist=terms, node_size=sizes, \
-        labels=terms, node_color=colors)
+        node_color=colors)
     
-    # labelthe HPO terms that were used in the probands
-    labels = dict(zip(terms, terms))
-    networkx.draw_networkx_labels(g, pos, nodelist=terms, labels=labels, \
-        font_size=8)
+    # label the HPO terms that were used in the probands, adjust the y position
+    # so that the label will sit above the plotted node
+    labels = dict(zip(terms, range(1, len(terms) + 1)))
+    label_pos = {x: (pos[x][0], pos[x][1] + 20) for x in pos}
+    networkx.draw_networkx_labels(g, label_pos, nodelist=terms, labels=labels, \
+        font_size=7, font_color="red")
     
-    path = "{0}_test.pdf".format(gene)
-    matplotlib.pyplot.savefig(path)
-    matplotlib.pyplot.close()
+    path = os.path.join("results", "{0}_test.pdf".format(gene))
+    
+    # get the label parameters
+    definitions = ["{0} - {1} ({2})".format(terms.index(x) + 1, g.node[x]["name"][0], x) for x in terms]
+    artists = [lines.Line2D(range(1), range(1), marker="", color="white") for x in terms]
+    
+    pyplot.legend(artists, definitions, loc=2, fontsize=4, frameon=False)
+    pyplot.axis("off")
+    pyplot.title(gene, loc="center")
+    pyplot.savefig(path, bbox_inches="tight", pad_inches=0)
+    pyplot.close()
 
 def get_all_paths_between_hpo(matcher, hpo):
     """ gets lists of HPO terms for all paths between probands HPO terms
