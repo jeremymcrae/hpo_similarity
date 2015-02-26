@@ -56,7 +56,7 @@ class FamilyHPO(object):
         terms = [term for term in terms if term not in self.obsolete_ids]
         
         # convert each term to it's standard HPO ID if the term is in the HPO IDs,
-        # otherwise just assume it is a standard HPO Id already.
+        # otherwise just assume it is a standard HPO ID already.
         terms = [self.alt_ids[term] if term in self.alt_ids else term for term in terms]
         
         return terms

@@ -1,8 +1,6 @@
 """ simple functions to load and parse data for HPO terms analyses
 """
 
-import sys
-
 from src.family_hpo_terms import FamilyHPO
 
 def load_ddg2p(ddg2p_path):
@@ -114,9 +112,6 @@ def load_alt_id_map(alt_id_path):
             line = line.split("\t")
             ref_id = line[0]
             alt_id = line[1]
-            
-            # if ":" in alt_id:
-            #     alt_id = alt_id.split(":")[0]
             
             alt_ids[alt_id] = ref_id
     

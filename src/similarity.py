@@ -241,7 +241,7 @@ class CalculateSimilarity(object):
             return set()
         
         return set(self.get_ancestors(term_1)) & set(self.get_ancestors(term_2))
-    
+
 
 class ICSimilarity(CalculateSimilarity):
     """ calculate similarity by IC score

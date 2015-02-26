@@ -15,31 +15,23 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
-import sys
 import argparse
 import bisect
-import itertools
 import math
 import random
 
-from matplotlib import use
-use("Agg")
-from matplotlib import pyplot
-from matplotlib import lines
-import networkx
-
 from src.load_files import load_participants_hpo_terms, load_de_novos
 from src.create_hpo_graph import loadHPONetwork
+from src.shared_term_plots import plot_shared_terms
 from src.similarity import PathLengthSimilarity
-from src.weighted_choice import WeightedChoice
 
 USER_PATH = "/nfs/users/nfs_j/jm33/"
 HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
 HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
 
-ddd_freeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-PHENOTYPES_PATH = os.path.join(ddd_freeze, "phenotypes_and_patient_info.txt")
-ALTERNATE_IDS_PATH = os.path.join(ddd_freeze, "person_sanger_decipher.txt")
+DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
+PHENOTYPES_PATH = os.path.join(DATAFREEZE_DIR, "phenotypes_and_patient_info.txt")
+ALTERNATE_IDS_PATH = os.path.join(DATAFREEZE_DIR, "person_sanger_decipher.txt")
 
 def get_options():
     """ get the command line switches
@@ -151,10 +143,10 @@ def calculate_hpo_prob(matcher, hpo_terms):
     for pos in range(len(hpo_terms)):
         proband = hpo_terms[pos]
         
-        # remove the proband, and and preceeding probands, so we
-        #   a) don't try to check for matches from an identical list
-        #   b) don't check probands for whom we already have results
-        others = [x for i,x in enumerate(hpo_terms) if i != pos]
+        # remove the proband, so we don't match to itself
+        others = hpo_terms[:]
+        others.pop(pos)
+        
         proband_probs = []
         for other in others:
             other_probs = []
@@ -190,14 +182,12 @@ def analyse_probands(matcher, family_hpo, probands):
     # proband, so return None instead.
     if len(hpo_terms) == 1:
         return None
-    else:
-        return 1
     
     observed = calculate_hpo_prob(matcher, hpo_terms)
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
-    for x in range(100):
+    for x in range(1000):
         sampled = random.sample(other_probands, len(probands))
         simulated = [family_hpo[n].get_child_hpo() for n in sampled]
         predicted = calculate_hpo_prob(matcher, simulated)
@@ -238,83 +228,6 @@ def analyse_de_novos(matcher, family_hpo, de_novos):
         output.write("{0}\t{1}\n".format(gene, p_value))
     
     output.close()
-
-def plot_graph(gene, matcher, hpo):
-    """ plots the HPO terms used in a set of probands as a tree
-    
-    Args:
-        gene: gene name as string
-        matcher: PathLengthSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        hpo: list of hpo lists for probands
-    """
-    g = matcher.graph.copy()
-    
-    all_hpo = [item for sublist in hpo for item in sublist]
-    all_paths = get_all_paths_between_hpo(matcher, hpo)
-    all_terms = [item for sublist in all_paths for item in sublist]
-    
-    # get a graph that has unneeded terms removed
-    nodes = matcher.graph.nodes()
-    [g.remove_node(node) for node in nodes if node not in set(all_terms)]
-    
-    # plot the network as a hierarchy (ie tree) of nodes,
-    pos = networkx.graphviz_layout(g, prog='dot')
-    networkx.draw_networkx_nodes(g, pos, with_labels=False, node_color="white", \
-        node_size=50, alpha=0.5)
-    networkx.draw_networkx_edges(g, pos, width=0.4, alpha=0.5, arrows=False)
-    
-    # scale the size of the plotted point by how many times the term was used
-    terms = sorted(set(all_hpo))
-    sizes = [50 + 50 * math.log(all_hpo.count(x), 2) for x in terms]
-    
-    # shade the plotted points so that rarer terms are more intensely shaded
-    ic = [matcher.calculate_information_content(x) for x in terms]
-    colors = ["#{0:02x}{0:02x}{0:02x}".format(int(255 - (23 * x))) for x in ic]
-    
-    # now draw the HPO terms that were used in the probands
-    networkx.draw_networkx_nodes(g, pos, nodelist=terms, node_size=sizes, \
-        node_color=colors)
-    
-    # label the HPO terms that were used in the probands, adjust the y position
-    # so that the label will sit above the plotted node
-    labels = dict(zip(terms, range(1, len(terms) + 1)))
-    label_pos = {x: (pos[x][0], pos[x][1] + 20) for x in pos}
-    networkx.draw_networkx_labels(g, label_pos, nodelist=terms, labels=labels, \
-        font_size=7, font_color="red")
-    
-    path = os.path.join("results", "{0}_test.pdf".format(gene))
-    
-    # get the label parameters
-    definitions = ["{0} - {1} ({2})".format(terms.index(x) + 1, g.node[x]["name"][0], x) for x in terms]
-    artists = [lines.Line2D(range(1), range(1), marker="", color="white") for x in terms]
-    
-    pyplot.legend(artists, definitions, loc=2, fontsize=4, frameon=False)
-    pyplot.axis("off")
-    pyplot.title(gene, loc="center")
-    pyplot.savefig(path, bbox_inches="tight", pad_inches=0)
-    pyplot.close()
-
-def get_all_paths_between_hpo(matcher, hpo):
-    """ gets lists of HPO terms for all paths between probands HPO terms
-    
-    Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        hpo: list of hpo lists for probands
-    """
-    
-    terms = [item for sublist in hpo for item in sublist]
-    
-    pairs = itertools.combinations(terms, 2)
-    paths = []
-    for (term1, term2) in pairs:
-        path = matcher.get_shortest_path(term1, term2)
-        paths.append(path)
-    
-    return paths
 
 def main():
     
