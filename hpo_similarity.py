@@ -19,7 +19,7 @@ import bisect
 import math
 import random
 
-from src.load_files import load_participants_hpo_terms, load_de_novos
+from src.load_files import load_participants_hpo_terms, load_variants
 from src.create_hpo_graph import loadHPONetwork
 from src.shared_term_plots import plot_shared_terms
 from src.similarity import PathLengthSimilarity
@@ -34,7 +34,7 @@ def get_options():
     """
     
     parser = argparse.ArgumentParser(description="Examines the likelihood of \
-        obtaining similar HPO terms in probands with de novos in the same gene.")
+        obtaining similar HPO terms in probands with variants in the same gene.")
     parser.add_argument("--variants", dest="variants_path", required=True, \
         default="/nfs/users/nfs_j/jm33/apps/mupit/data-raw/de_novo_datasets/ \
             de_novos.ddd_4k.ddd_only.txt", \
@@ -129,7 +129,7 @@ def get_proband_similarity(matcher, hpo_terms):
         matcher: PathLengthSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        hpo_terms: list of HPO terms found for each proband with de novos for
+        hpo_terms: list of HPO terms found for each proband with variants for
             the current gene.
     
     Returns:
