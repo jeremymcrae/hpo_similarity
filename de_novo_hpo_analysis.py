@@ -63,7 +63,7 @@ def get_ic_from_closest_ancestor(matcher, proband_term, other_terms):
     the terms that are closest to the probands term. We use the path distance
     between terms to assess closeness. Sometimes we get multiple terms from the
     other proband that are equally close to the first probands term. We want
-    something like the probability of obtaing this matching term.
+    something like the probability of obtaining this matching term.
     
     Rather than using the matching term itself, instead we use the closest
     common ancestor to the probands term and the matching HPO terms from the
@@ -111,9 +111,17 @@ def get_ic_from_closest_ancestor(matcher, proband_term, other_terms):
     return max(ic)
 
 def geomean(values):
+    """ calculate the geometric mean of a list of floats.
+    
+    Args:
+        values: list of values, none of which are zero or less. The list must
+            contain at least some values.
+    
+    Returns:
+        The geometric mean as float.
+    """
     
     values = [math.log10(x) for x in values]
-    
     mean = sum(values)/float(len(values))
     
     return 10**mean
@@ -151,87 +159,54 @@ def calculate_hpo_prob(matcher, hpo_terms):
         for other in others:
             other_probs = []
             for term in proband:
-                # for other in others:
                 ic = get_ic_from_closest_ancestor(matcher, term, other)
                 other_probs.append(ic)
             proband_probs.append(geomean(other_probs))
+        
         log_probs.append(geomean(proband_probs))
-    
-    print(log_probs)
     
     return sum(log_probs)
 
-# def simulate_hpo_terms(sampler, lengths):
-def simulate_hpo_terms(family_hpo, probands, other_probands):
-    """ simulate a list of list of HPO terms, using the true number of terms.
-    
-    For simulations, we want as many simulated probands as we have observed, and
-    we want as many HPO terms for each proband as for the observed probands. So
-    one proband might have four HPO terms, another might have six, and we
-    randomly sample as many as were observed.
-    
-    Args:
-        sampler: A WeightedChoice object, where the probability of sampling
-            an HPO term is proportional to its usage in all probands.
-        lengths: list of the number of HPO terms found for each proband with de
-            novos for the current gene.
-    
-    Returns:
-        list of HPO terms lists eg [[HP:1, HP:2, HP:3], [HP:4, HP:5]]
-    """
-    
-    
-    sampled = random.sample(other_probands, len(probands))
-    simulated_list = [family_hpo[x].get_child_hpo() for x in sampled]
-    
-    # simulated_list = []
-    # for length in lengths:
-    #     a = [sampler.choice() for x in range(0, length)]
-    #     simulated_list.append(a)
-    
-    return simulated_list
-
-def analyse_probands(matcher, sampler, family_hpo, probands):
+def analyse_probands(matcher, family_hpo, probands):
     """ get the probability of HPO terms matching in a set of probands
     
     Args:
         matcher: PathLengthSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        sampler: A WeightedChoice object, where the probability of sampling
-            an HPO term is proportional to its usage in all probands.
-        family_hpo: list of FamilyHPO objects for all probands
-        probands: list of proband IDs
+        family_hpo: list of FamilyHPO objects for all probands.
+        probands: list of proband IDs.
     
     Returns:
         The probability that the HPO terms used in the probands match as well as
         they do.
     """
     
-    if len(probands) == 1:
-        return None, None, None
-    
     hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
     other_probands = [x for x in family_hpo if x not in probands]
+    
+    # Sometimes only one of the probands has HPO terms recorded. We cannot
+    # estimate the phenotypic similarity between probands when we only have one
+    # proband, so return None instead.
+    if len(hpo_terms) == 1:
+        return None
+    else:
+        return 1
     
     observed = calculate_hpo_prob(matcher, hpo_terms)
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
     for x in range(100):
-        # simulated = simulate_hpo_terms(sampler, lengths)
-        simulated = simulate_hpo_terms(family_hpo, hpo_terms, other_probands)
+        sampled = random.sample(other_probands, len(probands))
+        simulated = [family_hpo[n].get_child_hpo() for n in sampled]
         predicted = calculate_hpo_prob(matcher, simulated)
         distribution.append(predicted)
     distribution = sorted(distribution)
     
-    print(distribution, observed)
-    
     # figure out where in the distribution the observed value occurs
     pos = bisect.bisect_left(distribution, observed)
     sim_prob = (abs(pos - len(distribution)))/(1 + len(distribution))
-    
-    print(sim_prob)
     
     return sim_prob
 
@@ -249,36 +224,18 @@ def analyse_de_novos(matcher, family_hpo, de_novos):
             those genes
     """
     
-    # # set up a class that we can use to randomly sample HPO terms, weighted
-    # # according to the probability that the term was used in the probands
-    # max_rate = 0
-    # rates = []
-    # for term in matcher.hpo_counts:
-    #     # get the probability that the HPO term was used in all probands
-    #     rate = matcher.get_term_count(term)/len(family_hpo)
-    #     rates.append((term, rate))
-    # sampler = WeightedChoice(rates)
-    
-    sampler = None
-    
-    output = open("de_novo_analysis.test.txt", "w")
+    output = open("results/de_novo_analysis.test.txt", "w")
     for gene in sorted(de_novos):
-        gene = "ARID1B"
         probands = de_novos[gene]
-        if len(probands) == 1:
-            continue
         
-        print(gene)
-        # hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
-        # plot_graph(gene, matcher, hpo_terms)
-        p_value = analyse_probands(matcher, sampler, family_hpo, probands)
+        p_value = "NA"
+        if len(probands) > 1:
+            p_value = analyse_probands(matcher, family_hpo, probands)
         
         if p_value is None:
-            continue
+            p_value = "NA"
             
         output.write("{0}\t{1}\n".format(gene, p_value))
-        print(gene, p_value)
-        break
     
     output.close()
 
@@ -358,7 +315,6 @@ def get_all_paths_between_hpo(matcher, hpo):
         paths.append(path)
     
     return paths
-        
 
 def main():
     
