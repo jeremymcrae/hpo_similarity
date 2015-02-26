@@ -16,7 +16,7 @@ class FamilyHPO(object):
     obsolete_ids = set()
     
     def __init__(self, child_hpo, maternal_hpo, paternal_hpo):
-        """initiate the class
+        """ initiate the class
         
         Args:
             child_hpo: HPO string for the proband, eg "HP:0005487|HP:0001363"

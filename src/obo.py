@@ -285,24 +285,14 @@ class Parser(object):
 
 
 def test():
-    fp = open("hpo_data/hp.obo")
-    parser = Parser(fp)
+    """Simple smoke testing for the OBO parser"""
+    parser = Parser("gene_ontology.1_2.obo")
     count = 0
-    
-    for header_id in parser.headers:
-        print(header_id, parser.headers[header_id])
-    
-    names = set()
-    for stanza in parser:
+    for _ in parser:
         count += 1
         if count % 1000 == 0:
-            print("%d stanzas processed" % count)
-        
-        # print stanza
-        names.update(stanza.tags.keys())
-    print("Parsing successful, %d stanzas" % count)
-    print()
-    print(names)
+            print "%d stanzas processed" % count
+    print "Parsing successful, %d stanzas" % count
 
 
 if __name__ == "__main__":

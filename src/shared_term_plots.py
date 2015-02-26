@@ -1,8 +1,13 @@
+""" plots a graph of HPO terms used within a group of probands.
+"""
 
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
+
+
+import itertools
 
 
 from matplotlib import use
@@ -38,8 +43,32 @@ def plot_shared_terms(gene, matcher, hpo):
         node_size=50, alpha=0.5)
     networkx.draw_networkx_edges(g, pos, width=0.4, alpha=0.5, arrows=False)
     
-    # scale the size of the plotted point by how many times the term was used
     terms = sorted(set(all_hpo))
+    shade_used_nodes(g, terms, all_hpo)
+    
+    # label the HPO terms that were used in the probands, adjust the y position
+    # so that the label will sit above the plotted node
+    labels = dict(zip(terms, range(1, len(terms) + 1)))
+    label_pos = {x: (pos[x][0], pos[x][1] + 20) for x in pos}
+    networkx.draw_networkx_labels(g, label_pos, nodelist=terms, labels=labels, \
+        font_size=7, font_color="red")
+    
+    save_figure(g, terms, gene)
+
+def shade_used_nodes(g, terms, all_hpo):
+    """ replot the nodes for the terms used in the probands
+    
+    Plot the used nodes, so the size represents how many times the term was used
+    among the group of probands, and the intensity of shading represents the
+    rarity of the term in the population.
+    
+    Args:
+        g: networkx graph object, with unsed terms removed.
+        terms: list of terms used in the probands.
+        all_hpo: list of all HPO terms used in the population.
+    """
+    
+    # scale the size of each plotted node by how many times the term was used
     sizes = [50 + 50 * math.log(all_hpo.count(x), 2) for x in terms]
     
     # shade the plotted points so that rarer terms are more intensely shaded
@@ -49,13 +78,15 @@ def plot_shared_terms(gene, matcher, hpo):
     # now draw the HPO terms that were used in the probands
     networkx.draw_networkx_nodes(g, pos, nodelist=terms, node_size=sizes, \
         node_color=colors)
+
+def save_figure(g, terms, gene):
+    """ exports a file, and makes a legend of HPO terms and their definitions.
     
-    # label the HPO terms that were used in the probands, adjust the y position
-    # so that the label will sit above the plotted node
-    labels = dict(zip(terms, range(1, len(terms) + 1)))
-    label_pos = {x: (pos[x][0], pos[x][1] + 20) for x in pos}
-    networkx.draw_networkx_labels(g, label_pos, nodelist=terms, labels=labels, \
-        font_size=7, font_color="red")
+    Args:
+        g: networkx graph object, with unsed terms removed.
+        terms: list of terms used in the probands.
+        gene: HGNC symbol for the current gene.
+    """
     
     path = os.path.join("results", "{0}_test.pdf".format(gene))
     
