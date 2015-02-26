@@ -1,13 +1,5 @@
-""" some graph analyses of HPO terms and their usage in patients and gene hits
+""" assess similarity og HPO terms in probands
 """
-
-# dependencies:
-#    go-parser (http://bazaar.launchpad.net/~ntamas/+junk/go-parser/files)
-#    networkx (http://networkx.github.io/, pip install --user networkx)
-#    matplotlib (http://matplotlib.org/, pip install --user matplotlib)
-#    HPO (http://compbio.charite.de/hudson/job/hpo/ or http://www.human-phenotype-ontology.org/)
-#    DDG2P
-
 
 from __future__ import division
 from __future__ import print_function
@@ -25,10 +17,7 @@ from src.create_hpo_graph import loadHPONetwork
 from src.shared_term_plots import plot_shared_terms
 from src.similarity import PathLengthSimilarity
 
-USER_PATH = "/nfs/users/nfs_j/jm33/"
-HPO_FOLDER = os.path.join(USER_PATH, "apps", "hpo_filter")
-HPO_PATH = os.path.join(HPO_FOLDER, "hpo_data", "hp.obo")
-
+HPO_PATH = os.path.join(os.path.dirname(__file__), "data", "hp.obo")
 DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
 PHENOTYPES_PATH = os.path.join(DATAFREEZE_DIR, "phenotypes_and_patient_info.txt")
 ALTERNATE_IDS_PATH = os.path.join(DATAFREEZE_DIR, "person_sanger_decipher.txt")
