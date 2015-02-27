@@ -18,10 +18,12 @@ import argparse
 import bisect
 import math
 import random
+import itertools
 
 from src.load_files import load_participants_hpo_terms, load_variants
 from src.ontology import Ontology
 from src.similarity import ICSimilarity
+from src.permute_probands import permute_probands
 
 HPO_PATH = os.path.join(os.path.dirname(__file__), "data", "hp.obo")
 DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
@@ -40,6 +42,9 @@ def get_options():
         help="Path to file listing known variants in genes. See example file \
             in data folder for format.")
     parser.add_argument("--output", required=True, help="path to output file")
+    parser.add_argument("--permute", action="store_true", default=False,
+        help="whether to permute the probands across genes, in order to assess \
+            method robustness.")
     
     args = parser.parse_args()
     
@@ -87,6 +92,7 @@ def get_score_for_pair(matcher, proband_1, proband_2):
             ic.append(matcher.get_max_ic(term_1, term_2))
     
     return geomean(ic)
+    # return max(ic)
     
 def get_proband_similarity(matcher, probands):
     """ calculate the similarity of HPO terms across different individuals.
@@ -153,7 +159,7 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
     # function for genes with a single proband, however, sometimes only one of
     # the probands has HPO terms recorded. We cannot estimate the phenotypic
     # similarity between probands in this case, so return None instead.
-    if len(probands) == 1:
+    if len(probands) < 2:
         return None
     
     observed = get_proband_similarity(matcher, probands)
@@ -193,14 +199,11 @@ def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
     for gene in sorted(probands_by_gene):
         probands = probands_by_gene[gene]
         
-        p_value = "NA"
+        p_value = None
         if len(probands) > 1:
             p_value = test_similarity(matcher, family_hpo, probands)
         
         if p_value is None:
-            p_value = "NA"
-        
-        if p_value == "NA":
             continue
         
         print(gene)
@@ -222,6 +225,9 @@ def main():
     print("loading HPO terms and probands by gene")
     family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, alt_node_ids, obsolete_ids)
     probands_by_gene = load_variants(options.variants_path)
+    
+    if options.permute:
+        probands_by_gene = permute_probands(probands_by_gene)
     
     matcher = ICSimilarity(family_hpo_terms, hpo_graph, alt_node_ids)
     matcher.tally_hpo_terms(family_hpo_terms)

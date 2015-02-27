@@ -31,8 +31,8 @@ get an overall similarity estimate for the group of probands.
 ###### Null distribution of similarity scores
 A null distribution of similarity scores is simulated by randomly sampling
 groups of probands. The similarity scores are calculated as above. The P value
-is calculated as the proportion of simulated scores greater than the value for
-the observed probands.
+is calculated as the proportion of simulated scores greater than the observed
+probands' score.
 
 Initially I thought we'd need to match the number of sampled HPO terms to the
 numbers in the probands for the gene. For that, I sampled terms at the rate at

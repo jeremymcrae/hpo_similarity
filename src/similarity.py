@@ -153,16 +153,14 @@ class ICSimilarity(CalculateSimilarity):
             term_1 and term_2.
         """
         
-        terms = tuple(sorted([term_1, term_2]))
+        terms = (term_1, term_2)
+        if term_2 < term_1:
+            terms = (term_2, term_1)
         
         if terms not in self.max_ic_cache:
             
             ancestors = self.find_common_ancestors(term_1, term_2)
-            
-            ic_values = []
-            for term in ancestors:
-                information_content = self.calculate_information_content(term)
-                ic_values.append(information_content)
+            ic_values = [self.calculate_information_content(x) for x in ancestors]
             
             self.max_ic_cache[terms] = max(ic_values)
         
