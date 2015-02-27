@@ -19,7 +19,7 @@ term in proband B. The information content is from the most informative common
 ancestor of the two terms.
 
 The IC scores are collapsed into a single score as the geometric mean of the IC
-scores. I tried using the maximum ID rather than the geometric mean, but the QQ
+scores. I tried using the maximum IC rather than the geometric mean, but the QQ
 plots were distorted, and the P values were excessively correlated with P values
 from gene enrichment testing.
 
