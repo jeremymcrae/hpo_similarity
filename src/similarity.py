@@ -26,8 +26,6 @@ class CalculateSimilarity(object):
         self.family_hpos = family_hpos
         self.alt_node_ids = alt_node_ids
         
-        self.graph_depth = networkx.eccentricity(self.graph, v="HP:0000001")
-        
         self.descendant_cache = {}
         self.ancestor_cache = {}
         
@@ -51,7 +49,7 @@ class CalculateSimilarity(object):
         
         return term
     
-    def tally_hpo_terms(self, hpo_terms, source="ddg2p"):
+    def tally_hpo_terms(self, hpo_terms):
         """ tallies each HPO term across the DDG2P genes
         
         Args:
@@ -85,20 +83,20 @@ class CalculateSimilarity(object):
         
         self.total_freq += 1
     
-    def get_subterms(self, top_term):
+    def get_descendants(self, term):
         """ finds the set of subterms that descend from a top level HPO term
         
         Args:
-            top_term: hpo term to find descendants of
+            term: hpo term to find descendants of
         
         Returns:
             set of descendant HPO terms
         """
         
-        if top_term not in self.descendant_cache:
-            self.descendant_cache[top_term] = networkx.descendants(self.graph, top_term)
+        if term not in self.descendant_cache:
+            self.descendant_cache[term] = networkx.descendants(self.graph, term)
         
-        return self.descendant_cache[top_term]
+        return self.descendant_cache[term]
     
     def get_ancestors(self, bottom_term):
         """ finds the set of subterms that are ancestors of a HPO term
@@ -141,6 +139,7 @@ class ICSimilarity(CalculateSimilarity):
     
     counts_cache = {}
     ic_cache = {}
+    max_ic_cache = {}
     
     def get_max_ic(self, term_1, term_2):
         """ calculate the maximum information content between two HPO terms
@@ -154,14 +153,20 @@ class ICSimilarity(CalculateSimilarity):
             term_1 and term_2.
         """
         
-        ancestors = self.find_common_ancestors(term_1, term_2)
+        terms = tuple(sorted([term_1, term_2]))
         
-        ic_values = []
-        for term in ancestors:
-            ic = self.calculate_information_content(term)
-            ic_values.append(ic)
+        if terms not in self.max_ic_cache:
+            
+            ancestors = self.find_common_ancestors(term_1, term_2)
+            
+            ic_values = []
+            for term in ancestors:
+                information_content = self.calculate_information_content(term)
+                ic_values.append(information_content)
+            
+            self.max_ic_cache[terms] = max(ic_values)
         
-        return max(ic_values)
+        return self.max_ic_cache[terms]
     
     def calculate_information_content(self, term):
         """ calculates the information content for an hpo term
@@ -201,7 +206,7 @@ class ICSimilarity(CalculateSimilarity):
             if term not in self.graph:
                 return 0
             
-            descendants = self.get_subterms(term)
+            descendants = self.get_descendants(term)
             
             count = 0
             if term in self.hpo_counts:

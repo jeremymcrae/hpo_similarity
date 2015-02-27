@@ -20,8 +20,7 @@ import math
 import random
 
 from src.load_files import load_participants_hpo_terms, load_variants
-from src.hpo_ontology import Ontology
-from src.shared_term_plots import plot_shared_terms
+from src.ontology import Ontology
 from src.similarity import ICSimilarity
 
 HPO_PATH = os.path.join(os.path.dirname(__file__), "data", "hp.obo")
@@ -65,10 +64,14 @@ def geomean(values):
 def get_score_for_pair(matcher, proband_1, proband_2):
     """ Calculate the similarity in HPO terms between terms for two probands.
     
-    Currently we use the geometric mean of the
+    Currently we use the geometric mean of the max IC values for all the pairs
+    of terms between the two probands. I trialled the maximum rather than the
+    geometric mean, but the QQ plots were distorted, and the P values were
+    excessively correlated with P values from gene enrichment testing, that is,
+    the P values were not independent of the enrichment tests.
     
     Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
+        matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
         proband_1: list of HPO terms for one proband
@@ -85,19 +88,19 @@ def get_score_for_pair(matcher, proband_1, proband_2):
     
     return geomean(ic)
     
-def get_proband_similarity(matcher, hpo_terms):
+def get_proband_similarity(matcher, probands):
     """ calculate the similarity of HPO terms across different individuals.
     
     We start with a list of HPO lists e.g. [[HP:01, HP:02], [HP:02, HP:03]],
     and calculate a matrix of similarity scores for each pair of probands in the
-    HPO lists. We condense that to a single score that estimates the similarity
+    HPO lists. We collapse that to a single score that estimates the similarity
     across all the probands.
     
     Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
+        matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        hpo_terms: List of HPO terms found for each proband with variants for
+        probands: List of HPO terms found for each proband with variants for
             the current gene e.g. [[HP:01, HP:02], [HP:02, HP:03]].
     
     Returns:
@@ -105,11 +108,11 @@ def get_proband_similarity(matcher, hpo_terms):
     """
     
     ic_scores = []
-    for pos in range(len(hpo_terms)):
-        proband = hpo_terms[pos]
+    for pos in range(len(probands)):
+        proband = probands[pos]
         
         # remove the proband, so we don't match to itself
-        others = hpo_terms[:]
+        others = probands[:]
         others.pop(pos)
         
         for other in others:
@@ -123,8 +126,16 @@ def get_proband_similarity(matcher, hpo_terms):
 def test_similarity(matcher, family_hpo, probands, n_sims=1000):
     """ find if groups of probands per gene share HPO terms more than by chance.
     
+    We simulate a distribution of similarity scores by randomly sampling groups
+    of probands. I tried matching the number of sampled HPO terms to the numbers
+    in the probands for the gene. For that, I gave each term the chance of being
+    sampled as the rate at which it was observed in all the probands. However,
+    these sampled terms gave abberant QQ plots, with excessive numbers of
+    extremely signficant P values. I suspect this is due to underlying
+    relationships between HPO terms.
+    
     Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
+        matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
         family_hpo: list of FamilyHPO objects for all probands.
@@ -135,17 +146,17 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
         they do.
     """
     
-    hpo_terms = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
+    probands = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
     other_probands = [x for x in family_hpo if x not in probands]
     
     # We can't test similarity from a single proband. We don't call this
     # function for genes with a single proband, however, sometimes only one of
     # the probands has HPO terms recorded. We cannot estimate the phenotypic
     # similarity between probands in this case, so return None instead.
-    if len(hpo_terms) == 1:
+    if len(probands) == 1:
         return None
     
-    observed = get_proband_similarity(matcher, hpo_terms)
+    observed = get_proband_similarity(matcher, probands)
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
@@ -154,6 +165,7 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
         simulated = [family_hpo[n].get_child_hpo() for n in sampled]
         predicted = get_proband_similarity(matcher, simulated)
         distribution.append(predicted)
+    
     distribution = sorted(distribution)
     
     # figure out where in the distribution the observed value occurs
@@ -166,7 +178,7 @@ def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
     """ tests genes to see if their probands share HPO terms more than by chance.
     
     Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
+        matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
         family_hpo: list of FamilyHPO objects for all probands
@@ -191,6 +203,7 @@ def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
         if p_value == "NA":
             continue
         
+        print(gene)
         output.write("{0}\t{1}\n".format(gene, p_value))
     
     output.close()
@@ -211,7 +224,7 @@ def main():
     probands_by_gene = load_variants(options.variants_path)
     
     matcher = ICSimilarity(family_hpo_terms, hpo_graph, alt_node_ids)
-    matcher.tally_hpo_terms(family_hpo_terms, source="child_hpo")
+    matcher.tally_hpo_terms(family_hpo_terms)
     
     print("analysing similarity")
     analyse_genes(matcher, family_hpo_terms, probands_by_gene, options.output)

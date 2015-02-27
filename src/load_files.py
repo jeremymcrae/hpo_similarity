@@ -68,8 +68,8 @@ def load_alt_id_map(alt_id_path):
     
     alt_ids = {}
     
-    with open(alt_id_path) as f:
-        for line in f:
+    with open(alt_id_path) as handle:
+        for line in handle:
             line = line.split("\t")
             ref_id = line[0]
             alt_id = line[1]
@@ -95,7 +95,7 @@ def load_variants(path):
     
     variants = {}
     with open(path) as handle:
-        header = handle.readline().strip().split("\t")
+        header = handle.readline()
         
         for line in handle:
             line = line.strip().split("\t")

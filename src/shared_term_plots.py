@@ -7,8 +7,9 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 
+import os
+import math
 import itertools
-
 
 from matplotlib import use
 use("Agg")
@@ -44,7 +45,7 @@ def plot_shared_terms(gene, matcher, hpo):
     networkx.draw_networkx_edges(g, pos, width=0.4, alpha=0.5, arrows=False)
     
     terms = sorted(set(all_hpo))
-    shade_used_nodes(g, terms, all_hpo)
+    shade_used_nodes(g, terms, all_hpo, pos)
     
     # label the HPO terms that were used in the probands, adjust the y position
     # so that the label will sit above the plotted node
@@ -55,7 +56,7 @@ def plot_shared_terms(gene, matcher, hpo):
     
     save_figure(g, terms, gene)
 
-def shade_used_nodes(g, terms, all_hpo):
+def shade_used_nodes(g, terms, all_hpo, pos):
     """ replot the nodes for the terms used in the probands
     
     Plot the used nodes, so the size represents how many times the term was used
