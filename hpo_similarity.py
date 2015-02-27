@@ -20,9 +20,9 @@ import math
 import random
 
 from src.load_files import load_participants_hpo_terms, load_variants
-from src.create_hpo_graph import loadHPONetwork
+from src.hpo_ontology import Ontology
 from src.shared_term_plots import plot_shared_terms
-from src.similarity import PathLengthSimilarity
+from src.similarity import ICSimilarity
 
 HPO_PATH = os.path.join(os.path.dirname(__file__), "data", "hp.obo")
 DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
@@ -40,65 +40,11 @@ def get_options():
             de_novos.ddd_4k.ddd_only.txt", \
         help="Path to file listing known variants in genes. See example file \
             in data folder for format.")
-    parse.add_argument("--output", required=True, help="path to output file")
+    parser.add_argument("--output", required=True, help="path to output file")
     
     args = parser.parse_args()
     
     return args
-
-def get_ic(matcher, proband_term, other_terms):
-    """ find the information content of the ancestor of the closest term
-    
-    For a given proband HPO term, we search the terms from another proband for
-    the terms that are closest to the probands term. We use the path distance
-    between terms to assess closeness. Sometimes we get multiple terms from the
-    other proband that are equally close to the first probands term. We want
-    something like the probability of obtaining this matching term.
-    
-    Rather than using the matching term itself, instead we use the closest
-    common ancestor to the probands term and the matching HPO terms from the
-    other proband.
-    
-    We check the ancestors to the matching terms for the one that has the
-    highest information content (ie most rare). We return the information
-    content.
-    
-    Args:
-        matcher: PathLengthSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        proband_term: HPO term from a proband (e.g. "HP:000118").
-        other_terms: list of HPO terms for a single proband e.g. ["HP:000110",
-            "HP:000220", "HP000330"].
-    
-    Returns:
-        The information content for the ancestor of the HPO term that is closest
-        to the probands HPO term. Where multiple HPO terms are equally close to
-        the probands term, use the one with the highest information content.
-    """
-    
-    min_distance = 1e9
-    best_terms = []
-    
-    for term in other_terms:
-        path = matcher.get_shortest_path(proband_term, term)
-        
-        if len(path) < min_distance:
-            min_distance = len(path)
-            best_terms = [term]
-        elif len(path) == min_distance:
-            best_terms.append(term)
-    
-    # if we have multiple HPO terms that are equally close to the probands term,
-    # then we find the highest information content for the ancestor closest to
-    # the probands term
-    ic = []
-    for term in set(best_terms):
-        common_terms = matcher.find_common_ancestors(proband_term, term)
-        ancestor = matcher.find_closest_ancestor(proband_term, common_terms)
-        ic.append(matcher.calculate_information_content(ancestor))
-    
-    return max(ic)
 
 def geomean(values):
     """ calculate the geometric mean of a list of floats.
@@ -115,26 +61,47 @@ def geomean(values):
     mean = sum(values)/float(len(values))
     
     return 10**mean
+
+def get_score_for_pair(matcher, proband_1, proband_2):
+    """ Calculate the similarity in HPO terms between terms for two probands.
     
-def get_proband_similarity(matcher, hpo_terms):
-    """ calculate the similarity of HPO terms across different individuals.
-    
-    We start with a list of lists for each individual, where the list for each
-    individual is a list of HPO terms. For each term in each individual, we find
-    the closest matching terms from the other probands. Given the matching term,
-    we get the information content of the term. We return the sum of the
-    information content values from the different matches.
+    Currently we use the geometric mean of the
     
     Args:
         matcher: PathLengthSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        hpo_terms: list of HPO terms found for each proband with variants for
-            the current gene.
+        proband_1: list of HPO terms for one proband
+        proband_2: list of HPO terms for the other proband
     
     Returns:
-        the summed negative log probability of observing the HPO terms in the
-        population.
+        A score for how similar the terms are between the two probands.
+    """
+    
+    ic = []
+    for term_1 in proband_1:
+        for term_2 in proband_2:
+            ic.append(matcher.get_max_ic(term_1, term_2))
+    
+    return geomean(ic)
+    
+def get_proband_similarity(matcher, hpo_terms):
+    """ calculate the similarity of HPO terms across different individuals.
+    
+    We start with a list of HPO lists e.g. [[HP:01, HP:02], [HP:02, HP:03]],
+    and calculate a matrix of similarity scores for each pair of probands in the
+    HPO lists. We condense that to a single score that estimates the similarity
+    across all the probands.
+    
+    Args:
+        matcher: PathLengthSimilarity object for the HPO term graph, with
+            information on how many times each term has been used across all
+            probands.
+        hpo_terms: List of HPO terms found for each proband with variants for
+            the current gene e.g. [[HP:01, HP:02], [HP:02, HP:03]].
+    
+    Returns:
+        The summed similarity score across the HPO terms for each proband.
     """
     
     ic_scores = []
@@ -145,25 +112,15 @@ def get_proband_similarity(matcher, hpo_terms):
         others = hpo_terms[:]
         others.pop(pos)
         
-        proband_ic_scores = []
         for other in others:
-            
             # for each term in the proband, measure how well it matches the
             # terms in another proband
-            temp_ic = []
-            for term in proband:
-                ic = get_ic(matcher, term, other)
-                temp_ic.append(ic)
-            
-            # # TODO:  check out the impact of using max IC for a proband pair
-            # proband_ic_scores.append(max(temp_ic))
-            proband_ic_scores.append(geomean(temp_ic))
-        
-        ic_scores.append(geomean(proband_ic_scores))
+            score = get_score_for_pair(matcher, proband, other)
+            ic_scores.append(score)
     
     return sum(ic_scores)
 
-def test_similarity(matcher, family_hpo, probands):
+def test_similarity(matcher, family_hpo, probands, n_sims=1000):
     """ find if groups of probands per gene share HPO terms more than by chance.
     
     Args:
@@ -192,7 +149,7 @@ def test_similarity(matcher, family_hpo, probands):
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
-    for x in range(1000):
+    for x in range(n_sims):
         sampled = random.sample(other_probands, len(probands))
         simulated = [family_hpo[n].get_child_hpo() for n in sampled]
         predicted = get_proband_similarity(matcher, simulated)
@@ -226,11 +183,14 @@ def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
         
         p_value = "NA"
         if len(probands) > 1:
-            p_value = analyse_probands(matcher, family_hpo, probands)
+            p_value = test_similarity(matcher, family_hpo, probands)
         
         if p_value is None:
             p_value = "NA"
-            
+        
+        if p_value == "NA":
+            continue
+        
         output.write("{0}\t{1}\n".format(gene, p_value))
     
     output.close()
@@ -240,18 +200,20 @@ def main():
     options = get_options()
     
     # build a graph of DDG2P terms, so we can trace paths between terms
-    hpo_file = loadHPONetwork(HPO_PATH)
-    graph = hpo_file.get_graph()
-    alt_node_ids = hpo_file.get_alt_ids()
-    obsolete_ids = hpo_file.get_obsolete_ids()
+    hpo_ontology = Ontology(HPO_PATH)
+    hpo_graph = hpo_ontology.get_graph()
+    alt_node_ids = hpo_ontology.get_alt_ids()
+    obsolete_ids = hpo_ontology.get_obsolete_ids()
     
     # load HPO terms and probands for each gene
+    print("loading HPO terms and probands by gene")
     family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, alt_node_ids, obsolete_ids)
     probands_by_gene = load_variants(options.variants_path)
     
-    matcher = PathLengthSimilarity(family_hpo_terms, graph, alt_node_ids)
+    matcher = ICSimilarity(family_hpo_terms, hpo_graph, alt_node_ids)
     matcher.tally_hpo_terms(family_hpo_terms, source="child_hpo")
     
+    print("analysing similarity")
     analyse_genes(matcher, family_hpo_terms, probands_by_gene, options.output)
 
 if __name__ == '__main__':

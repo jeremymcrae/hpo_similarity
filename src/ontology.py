@@ -6,18 +6,21 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import sys
+
 import networkx
 
 from src.obo import Parser
 
 
-class loadHPONetwork(object):
+class Ontology(object):
     """ load a HPO obo file into a graph network for subsequent analysis
     """
     
     def __init__(self, hpo_path):
         """ load the hpo file, and process it into a network
         """
+        
         self.hpo_header, self.hpo_list = self.load_hpo_database(hpo_path)
         
         # track alternate HPO IDs (since we use HPO IDs as node IDs)
@@ -35,6 +38,8 @@ class loadHPONetwork(object):
             parser.header: obo header for file
             hpo_entries: list of entries in HPO database
         """
+        
+        print("loading HPO ontology")
         
         parser = Parser(hpo_path)
         hpo_entries = []
@@ -113,6 +118,7 @@ class loadHPONetwork(object):
             networkx graph object
         """
         
+        print("creating HPO graph")
         graph = networkx.DiGraph()
         
         # add the hpo header values as attributes for the graph

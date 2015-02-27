@@ -142,6 +142,27 @@ class ICSimilarity(CalculateSimilarity):
     counts_cache = {}
     ic_cache = {}
     
+    def get_max_ic(self, term_1, term_2):
+        """ calculate the maximum information content between two HPO terms
+        
+        Args:
+            term_1: hpo term, eg HP:0000003
+            term_2: hpo term, eg HP:0000002
+        
+        Returns:
+            the maximum information content value from the common ancestors of
+            term_1 and term_2.
+        """
+        
+        ancestors = self.find_common_ancestors(term_1, term_2)
+        
+        ic_values = []
+        for term in ancestors:
+            ic = self.calculate_information_content(term)
+            ic_values.append(ic)
+        
+        return max(ic_values)
+    
     def calculate_information_content(self, term):
         """ calculates the information content for an hpo term
         
@@ -189,79 +210,7 @@ class ICSimilarity(CalculateSimilarity):
                 if subterm in self.hpo_counts:
                     count += self.hpo_counts[subterm]
             
+            # cache the count, so we only have to calculate this once
             self.counts_cache[term] = count
         
         return self.counts_cache[term]
-
-class PathLengthSimilarity(ICSimilarity):
-    """ calculate similarity score by path length
-    """
-    
-    path_cache = {}
-    
-    def get_shortest_path(self, term_1, term_2):
-        """ finds the shortest path between two terms (and caches the result)
-        
-        Args:
-            term_1: HPO ID for graph node
-            term_2: HPO ID for graph node
-        
-        Returns:
-            list of nodes for path
-        """
-        
-        term_1 = self.fix_alternate_id(term_1)
-        term_2 = self.fix_alternate_id(term_2)
-        
-        if (term_1, term_2) not in self.path_cache:
-            try:
-                path = networkx.shortest_path(self.graph, term_1, term_2)
-            except networkx.exception.NetworkXNoPath:
-                path = self.get_path_between_nondescendants(term_1, term_2)
-                
-            self.path_cache[(term_1, term_2)] = path
-            self.path_cache[(term_2, term_1)] = path
-        
-        return self.path_cache[(term_1, term_2)]
-    
-    def get_path_between_nondescendants(self, term_1, term_2):
-        """ gets the shortest path between terms not from the same branch
-        
-        Args:
-            term_1: HPO ID for graph node
-            term_2: HPO ID for graph node
-        
-        Returns:
-            shortest_path: list of nodes for path
-        """
-        
-        common_terms = self.find_common_ancestors(term_1, term_2)
-        ancestor = self.find_closest_ancestor(term_1, common_terms)
-        
-        # get the paths from the two terms to their closest ancestor
-        path_1 = self.get_shortest_path(ancestor, term_1)[::-1]
-        path_2 = self.get_shortest_path(ancestor, term_2)
-        
-        return path_1[:-1] + path_2
-    
-    def find_closest_ancestor(self, node, ancestors):
-        """ finds the closest ancestor of a term from a list of ancestor terms
-        
-        Args:
-            node: node ID to search from
-            ancestors: list of ancestor node IDs
-        
-        Returns:
-            ancestor_to_use: closest ancestor node ID
-        """
-        
-         # find the path to the closest common ancestor
-        shortest = None
-        ancestor_to_use = ""
-        for ancestor in ancestors:
-            length = len(self.get_shortest_path(ancestor, node))
-            if shortest is None or length < shortest:
-                shortest = length
-                ancestor_to_use = ancestor
-        
-        return ancestor_to_use

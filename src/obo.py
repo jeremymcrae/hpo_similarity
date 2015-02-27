@@ -291,8 +291,8 @@ def test():
     for _ in parser:
         count += 1
         if count % 1000 == 0:
-            print "%d stanzas processed" % count
-    print "Parsing successful, %d stanzas" % count
+            print("%d stanzas processed") % count
+    print("Parsing successful, %d stanzas") % count
 
 
 if __name__ == "__main__":
