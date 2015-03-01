@@ -14,16 +14,15 @@ class CalculateSimilarity(object):
     """ calculate graph similarity scores
     """
     
-    def __init__(self, family_hpos, hpo_graph, alt_node_ids):
+    def __init__(self, hpo_by_individual, hpo_graph, alt_node_ids):
         """
         
         Args:
-            family_hpos: hpo term object, to get terms for probands, or parents
-            graph: graph of hpo terms, as networkx object
+            hpo_by_individual: dictionary of hpo terms for each individual
+            graph: graph of hpo ontology, as networkx object
         """
         
         self.graph = hpo_graph
-        self.family_hpos = family_hpos
         self.alt_node_ids = alt_node_ids
         
         self.descendant_cache = {}
@@ -31,6 +30,8 @@ class CalculateSimilarity(object):
         
         self.hpo_counts = {}
         self.total_freq = 0
+        
+        self.tally_hpo_terms(hpo_by_individual)
     
     def fix_alternate_id(self, term):
         """ converts HPO terms using alternate IDs to the standard term
@@ -57,7 +58,7 @@ class CalculateSimilarity(object):
         """
         
         for item in hpo_terms:
-            child_terms = hpo_terms[item].get_child_hpo()
+            child_terms = hpo_terms[item]
             for term in child_terms:
                 self.add_hpo(term)
     

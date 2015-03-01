@@ -58,5 +58,6 @@ The similarity of HPO terms in groups of individuals can be analysed with:
 ```sh
 python3 hpo similarity.py \
   --variants VARIANT_PATH \
+  --phenotypes PHENOTYPES_PATH \
   --output OUTFILE
 ```

@@ -25,10 +25,6 @@ from src.ontology import Ontology
 from src.similarity import ICSimilarity
 from src.permute_probands import permute_probands
 
-HPO_PATH = os.path.join(os.path.dirname(__file__), "data", "hp.obo")
-DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-PHENOTYPES_PATH = os.path.join(DATAFREEZE_DIR, "phenotypes_and_patient_info.txt")
-ALTERNATE_IDS_PATH = os.path.join(DATAFREEZE_DIR, "person_sanger_decipher.txt")
 
 def get_options():
     """ get the command line switches
@@ -37,10 +33,14 @@ def get_options():
     parser = argparse.ArgumentParser(description="Examines the likelihood of \
         obtaining similar HPO terms in probands with variants in the same gene.")
     parser.add_argument("--variants", dest="variants_path", required=True, \
-        default="/nfs/users/nfs_j/jm33/apps/mupit/data-raw/de_novo_datasets/ \
-            de_novos.ddd_4k.ddd_only.txt", \
-        help="Path to file listing known variants in genes. See example file \
-            in data folder for format.")
+        help="Path to file listing probands per gene. See \
+            data/example_variants.json for format.")
+    parser.add_argument("--phenotypes", dest="phenotypes_path", required=True, \
+        help="Path to file listing phenotypes per proband. See \
+            data/example_phenotypes.json for format.")
+    parser.add_argument("--ontology", \
+        default=os.path.join(os.path.dirname(__file__), "data", "hp.obo"), \
+        help="path to HPO ontology obo file, see http://human-phenotype-ontology.org/.")
     parser.add_argument("--output", required=True, help="path to output file")
     parser.add_argument("--permute", action="store_true", default=False,
         help="whether to permute the probands across genes, in order to assess \
@@ -92,7 +92,6 @@ def get_score_for_pair(matcher, proband_1, proband_2):
             ic.append(matcher.get_max_ic(term_1, term_2))
     
     return geomean(ic)
-    # return max(ic)
     
 def get_proband_similarity(matcher, probands):
     """ calculate the similarity of HPO terms across different individuals.
@@ -129,7 +128,7 @@ def get_proband_similarity(matcher, probands):
     
     return sum(ic_scores)
 
-def test_similarity(matcher, family_hpo, probands, n_sims=1000):
+def test_similarity(matcher, hpo_by_proband, probands, n_sims=1000):
     """ find if groups of probands per gene share HPO terms more than by chance.
     
     We simulate a distribution of similarity scores by randomly sampling groups
@@ -144,7 +143,7 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
         matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        family_hpo: list of FamilyHPO objects for all probands.
+        hpo_by_proband: dictionary of HPO terms per proband
         probands: list of proband IDs.
     
     Returns:
@@ -152,8 +151,8 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
         they do.
     """
     
-    probands = [family_hpo[x].get_child_hpo() for x in probands if x in family_hpo]
-    other_probands = [x for x in family_hpo if x not in probands]
+    probands = [hpo_by_proband[x] for x in probands if x in hpo_by_proband]
+    other_probands = [x for x in hpo_by_proband if x not in probands]
     
     # We can't test similarity from a single proband. We don't call this
     # function for genes with a single proband, however, sometimes only one of
@@ -168,7 +167,7 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
     distribution = []
     for x in range(n_sims):
         sampled = random.sample(other_probands, len(probands))
-        simulated = [family_hpo[n].get_child_hpo() for n in sampled]
+        simulated = [hpo_by_proband[n] for n in sampled]
         predicted = get_proband_similarity(matcher, simulated)
         distribution.append(predicted)
     
@@ -180,14 +179,14 @@ def test_similarity(matcher, family_hpo, probands, n_sims=1000):
     
     return sim_prob
 
-def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
+def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
     """ tests genes to see if their probands share HPO terms more than by chance.
     
     Args:
         matcher: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
             probands.
-        family_hpo: list of FamilyHPO objects for all probands
+        hpo_by_proband: dictionary of HPO terms per proband
         probands_by_gene: dictionary of genes, to the probands who have variants
             in those genes.
         output_path: path to file to write the results to.
@@ -201,7 +200,7 @@ def analyse_genes(matcher, family_hpo, probands_by_gene, output_path):
         
         p_value = None
         if len(probands) > 1:
-            p_value = test_similarity(matcher, family_hpo, probands)
+            p_value = test_similarity(matcher, hpo_by_proband, probands)
         
         if p_value is None:
             continue
@@ -215,25 +214,24 @@ def main():
     
     options = get_options()
     
-    # build a graph of DDG2P terms, so we can trace paths between terms
-    hpo_ontology = Ontology(HPO_PATH)
+    # build a graph of HPO terms, so we can trace paths between terms
+    hpo_ontology = Ontology(options.ontology)
     hpo_graph = hpo_ontology.get_graph()
     alt_node_ids = hpo_ontology.get_alt_ids()
     obsolete_ids = hpo_ontology.get_obsolete_ids()
     
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
-    family_hpo_terms = load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, alt_node_ids, obsolete_ids)
+    hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, alt_node_ids, obsolete_ids)
     probands_by_gene = load_variants(options.variants_path)
     
     if options.permute:
         probands_by_gene = permute_probands(probands_by_gene)
     
-    matcher = ICSimilarity(family_hpo_terms, hpo_graph, alt_node_ids)
-    matcher.tally_hpo_terms(family_hpo_terms)
+    matcher = ICSimilarity(hpo_by_proband, hpo_graph, alt_node_ids)
     
     print("analysing similarity")
-    analyse_genes(matcher, family_hpo_terms, probands_by_gene, options.output)
+    analyse_genes(matcher, hpo_by_proband, probands_by_gene, options.output)
 
 if __name__ == '__main__':
     main()
