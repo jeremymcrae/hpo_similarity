@@ -14,13 +14,14 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
+import sys
 import argparse
 import bisect
 import math
 import random
 import itertools
 
-from src.load_files import load_participants_hpo_terms, load_variants
+from src.load_files import load_participants_hpo_terms, load_genes
 from src.ontology import Ontology
 from src.similarity import ICSimilarity
 from src.permute_probands import permute_probands
@@ -32,16 +33,17 @@ def get_options():
     
     parser = argparse.ArgumentParser(description="Examines the likelihood of \
         obtaining similar HPO terms in probands with variants in the same gene.")
-    parser.add_argument("--variants", dest="variants_path", required=True, \
+    parser.add_argument("--genes", dest="genes_path", required=True, \
         help="Path to file listing probands per gene. See \
-            data/example_variants.json for format.")
+            data/example_genes.json for format.")
     parser.add_argument("--phenotypes", dest="phenotypes_path", required=True, \
         help="Path to file listing phenotypes per proband. See \
             data/example_phenotypes.json for format.")
     parser.add_argument("--ontology", \
         default=os.path.join(os.path.dirname(__file__), "data", "hp.obo"), \
-        help="path to HPO ontology obo file, see http://human-phenotype-ontology.org/.")
-    parser.add_argument("--output", required=True, help="path to output file")
+        help="path to HPO ontology obo file, see http://human-phenotype-ontology.org")
+    parser.add_argument("--output", default=sys.stdout, \
+        help="path to output file, defaults to standard out.")
     parser.add_argument("--permute", action="store_true", default=False,
         help="whether to permute the probands across genes, in order to assess \
             method robustness.")
@@ -192,7 +194,12 @@ def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
         output_path: path to file to write the results to.
     """
     
-    output = open(output_path, "w")
+    # Sometimes output_path is actually sys.stdout, other times it is a path.
+    # Check if output_path is a file type before trying to open the path.
+    output = output_path
+    if not isinstance(output_path, file):
+        output = open(output_path, "w")
+    
     output.write("hgnc\thpo_similarity_p_value\n")
     
     for gene in sorted(probands_by_gene):
@@ -205,7 +212,6 @@ def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
         if p_value is None:
             continue
         
-        print(gene)
         output.write("{0}\t{1}\n".format(gene, p_value))
     
     output.close()
@@ -223,7 +229,7 @@ def main():
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
     hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, alt_node_ids, obsolete_ids)
-    probands_by_gene = load_variants(options.variants_path)
+    probands_by_gene = load_genes(options.genes_path)
     
     if options.permute:
         probands_by_gene = permute_probands(probands_by_gene)
@@ -231,7 +237,10 @@ def main():
     matcher = ICSimilarity(hpo_by_proband, hpo_graph, alt_node_ids)
     
     print("analysing similarity")
-    analyse_genes(matcher, hpo_by_proband, probands_by_gene, options.output)
+    try:
+        analyse_genes(matcher, hpo_by_proband, probands_by_gene, options.output)
+    except KeyboardInterrupt:
+        sys.exit("HPO similarity exited.")
 
 if __name__ == '__main__':
     main()

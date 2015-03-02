@@ -15,7 +15,7 @@ PHENOTYPES_OUT = os.path.join(USER_DIR, "apps/hpo_similarity/data/phenotypes_by_
 GENES_OUT = os.path.join(USER_DIR, "apps/hpo_similarity/data/probands_by_gene.json")
 
 
-def load_participants_hpo_terms(pheno_path, alt_id_path, output_path):
+def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
     """ loads patient HPO terms
     
     Args:
@@ -82,11 +82,11 @@ def load_alt_id_map(alt_id_path):
     
     return alt_ids
 
-def load_variants(path, output_path):
-    """ load variants found in probands, organised per gene.
+def prepare_genes(path, output_path):
+    """ load probands per gene from de novo variant file
     
     Args:
-        path: path to variant containing file.
+        path: path to de novo variant containing file.
         output_path: path to save probands per gene as JSON-encoded file.
     """
     
@@ -95,7 +95,7 @@ def load_variants(path, output_path):
         "initiator_codon_variant", "stop_lost", "inframe_deletion",
         "inframe_insertion", "splice_region_variant"])
     
-    variants = {}
+    genes = {}
     with open(path) as handle:
         header = handle.readline()
         
@@ -109,21 +109,21 @@ def load_variants(path, output_path):
             if consequence not in functional:
                 continue
             
-            if hgnc_symbol not in variants:
-                variants[hgnc_symbol] = set()
+            if hgnc_symbol not in genes:
+                genes[hgnc_symbol] = set()
             
-            variants[hgnc_symbol].add(proband_id)
+            genes[hgnc_symbol].add(proband_id)
     
-    for hgnc in variants:
-        variants[hgnc] = list(variants[hgnc])
+    for hgnc in genes:
+        genes[hgnc] = list(genes[hgnc])
     
     with open(output_path, "w") as output:
-        json.dump(variants, output, indent=4, sort_keys=True)
+        json.dump(genes, output, indent=4, sort_keys=True)
 
 def main():
     
-    load_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, PHENOTYPES_OUT)
-    load_variants(VARIANTS_PATH, GENES_OUT)
+    prepare_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, PHENOTYPES_OUT)
+    prepare_genes(VARIANTS_PATH, GENES_OUT)
 
 if __name__ == "__main__":
     main()

@@ -13,7 +13,7 @@ def load_participants_hpo_terms(path, alt_ids, obsolete):
     
     Returns:
         dictionary of HPO term lists indexed by proband ID e.g. {DDD01:
-        [HP:01, HP:02], "DDD02": [HP:03, HP:03]}
+        [HP:01, HP:02], DDD02: [HP:03, HP:03]}
     """
     
     # load the phenotype data for each participant
@@ -36,7 +36,7 @@ def load_participants_hpo_terms(path, alt_ids, obsolete):
     
     return hpo
 
-def load_variants(path):
+def load_genes(path):
     """ loads dictionary of probands indexed by HGNC symbol
     
     Args:
