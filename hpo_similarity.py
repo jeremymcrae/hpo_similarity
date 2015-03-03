@@ -115,17 +115,15 @@ def get_proband_similarity(matcher, probands):
     """
     
     ic_scores = []
-    for pos in range(len(probands)):
-        proband = probands[pos]
-        
-        # remove the proband, so we don't match to itself
-        others = probands[:]
-        others.pop(pos)
-        
-        for other in others:
+    for x in range(len(probands)):
+        for y in range(len(probands)):
+            # don't match a proband to itself
+            if x == y:
+                continue
+            
             # for each term in the proband, measure how well it matches the
             # terms in another proband
-            score = get_score_for_pair(matcher, proband, other)
+            score = get_score_for_pair(matcher, probands[x], probands[y])
             ic_scores.append(score)
     
     return sum(ic_scores)
@@ -178,6 +176,9 @@ def test_similarity(matcher, hpo_by_proband, probands, n_sims=1000):
     # figure out where in the distribution the observed value occurs
     pos = bisect.bisect_left(distribution, observed)
     sim_prob = (abs(pos - len(distribution)))/(1 + len(distribution))
+    
+    if sim_prob == 0:
+        sim_prob = 1 / (1 + len(distribution))
     
     return sim_prob
 
