@@ -22,7 +22,7 @@ def permute_probands(probands):
     """
     
     all_probands = probands.values()
-    all_probands = set.union(*all_probands)
+    all_probands = set.union(*[set(x) for x in all_probands])
     
     permuted = {}
     for gene in probands:
