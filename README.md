@@ -47,7 +47,7 @@ There are two python package requirements, both of which are pip installable:
 - networkx
 - matplotlib
 
-This code depends on:
+This code incorporates the following code and datasets:
 - a [python ontology parser](https://github.com/ntamas/gfam/blob/master/gfam/go/obo.py)
   written by Tamás Nepusz.
 - the [obo file](http://purl.obolibrary.org/obo/hp.obo) from the
