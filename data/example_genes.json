@@ -1,0 +1,10 @@
+{
+    "geneA": [
+        "person_01"
+    ],
+    "geneB": [
+        "person_01", 
+        "person_02", 
+        "person_03"
+    ]
+}
