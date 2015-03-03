@@ -192,14 +192,14 @@ def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
         hpo_by_proband: dictionary of HPO terms per proband
         probands_by_gene: dictionary of genes, to the probands who have variants
             in those genes.
-        output_path: path to file to write the results to.
+        output_path: path to file to write the results to, or sys.stdout object.
     """
     
     # Sometimes output_path is actually sys.stdout, other times it is a path.
-    # Check if output_path is a file type before trying to open the path.
-    output = output_path
-    if not isinstance(output_path, file):
+    try:
         output = open(output_path, "w")
+    except TypeError:
+        output = output_path
     
     output.write("hgnc\thpo_similarity_p_value\n")
     
