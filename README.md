@@ -54,10 +54,19 @@ This code depends on:
   [Human Phenotype Ontology Consortium](http://human-phenotype-ontology.org/).
 
 ##### Running the code
-The similarity of HPO terms in groups of individuals can be analysed with:
+The similarity of HPO terms in groups of individuals can be analysed using the
+example datasets in data directory. Analysis results are by default written to
+standard out. Run the code using the example datasets as:
 ```sh
 python3 hpo similarity.py \
-  --variants VARIANT_PATH \
-  --phenotypes PHENOTYPES_PATH \
-  --output OUTFILE
+  --genes data/example_genes.json \
+  --phenotypes data/example_phenotypes.json
 ```
+
+You can optionally use:
+- `--output OUTPUT_PATH` to redirect the table of gene symbols and P values to a
+  file.
+- `--ontology ONTOLOGY_OBO_PATH` to specify a HPO ontology file other than the
+  one included in the data directory.
+- `--permute` to permute probands between genes, to assess whether the results
+  match a null distribution in the absence of any true relationships.
