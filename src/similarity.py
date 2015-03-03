@@ -77,11 +77,9 @@ class CalculateSimilarity(object):
             if not self.graph.has_node(term):
                 return
             
-            if term not in self.hpo_counts:
-                self.hpo_counts[term] = 0
-            
-            self.hpo_counts[term] += 1
+            self.hpo_counts[term] = 0
         
+        self.hpo_counts[term] += 1
         self.total_freq += 1
     
     def get_descendants(self, term):

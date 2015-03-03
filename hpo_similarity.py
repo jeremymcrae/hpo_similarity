@@ -93,7 +93,7 @@ def get_score_for_pair(matcher, proband_1, proband_2):
         for term_2 in proband_2:
             ic.append(matcher.get_max_ic(term_1, term_2))
     
-    return geomean(ic)
+    return max(ic)
     
 def get_proband_similarity(matcher, probands):
     """ calculate the similarity of HPO terms across different individuals.
