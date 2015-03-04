@@ -47,6 +47,9 @@ def get_options():
     parser.add_argument("--permute", action="store_true", default=False,
         help="whether to permute the probands across genes, in order to assess \
             method robustness.")
+    parser.add_argument("--iterations", type=int, default=100000,
+        help="whether to permute the probands across genes, in order to assess \
+            method robustness.")
     
     args = parser.parse_args()
     
@@ -128,7 +131,7 @@ def get_proband_similarity(matcher, probands):
     
     return sum(ic_scores)
 
-def test_similarity(matcher, hpo_by_proband, probands, n_sims=1000):
+def test_similarity(matcher, hpo_by_proband, probands, n_sims):
     """ find if groups of probands per gene share HPO terms more than by chance.
     
     We simulate a distribution of similarity scores by randomly sampling groups
@@ -145,6 +148,7 @@ def test_similarity(matcher, hpo_by_proband, probands, n_sims=1000):
             probands.
         hpo_by_proband: dictionary of HPO terms per proband
         probands: list of proband IDs.
+        n_sims: number of simulations to run.
     
     Returns:
         The probability that the HPO terms used in the probands match as well as
@@ -182,7 +186,7 @@ def test_similarity(matcher, hpo_by_proband, probands, n_sims=1000):
     
     return sim_prob
 
-def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
+def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path, iterations):
     """ tests genes to see if their probands share HPO terms more than by chance.
     
     Args:
@@ -193,6 +197,7 @@ def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
         probands_by_gene: dictionary of genes, to the probands who have variants
             in those genes.
         output_path: path to file to write the results to, or sys.stdout object.
+        iterations: number of iterations to run.
     """
     
     # Sometimes output_path is actually sys.stdout, other times it is a path.
@@ -208,7 +213,7 @@ def analyse_genes(matcher, hpo_by_proband, probands_by_gene, output_path):
         
         p_value = None
         if len(probands) > 1:
-            p_value = test_similarity(matcher, hpo_by_proband, probands)
+            p_value = test_similarity(matcher, hpo_by_proband, probands, iterations)
         
         if p_value is None:
             continue
@@ -229,7 +234,8 @@ def main():
     
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
-    hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, alt_node_ids, obsolete_ids)
+    hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, \
+        alt_node_ids, obsolete_ids)
     probands_by_gene = load_genes(options.genes_path)
     
     if options.permute:
@@ -239,7 +245,8 @@ def main():
     
     print("analysing similarity")
     try:
-        analyse_genes(matcher, hpo_by_proband, probands_by_gene, options.output)
+        analyse_genes(matcher, hpo_by_proband, probands_by_gene, \
+            options.output, options.iterations)
     except KeyboardInterrupt:
         sys.exit("HPO similarity exited.")
 
