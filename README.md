@@ -72,3 +72,7 @@ You can optionally use:
   one included in the data directory.
 - `--permute` to permute probands between genes, to assess whether the results
   match a null distribution in the absence of any true relationships.
+- `--iterations INTEGER` to specify the number of iterations of simulation you
+  wish to run. By default the code runs 100000 iterations, and with that number,
+  analysis of a single gene can take from 30-1500 seconds, depending on how many
+  probands are in each gene.
