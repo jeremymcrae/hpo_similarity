@@ -46,7 +46,7 @@ There are two python package requirements, both of which are pip installable:
 This code incorporates the following code and datasets:
 - a [python ontology parser](https://github.com/ntamas/gfam/blob/master/gfam/go/obo.py)
   written by Tamás Nepusz.
-- the [obo file](http://purl.obolibrary.org/obo/hp.obo) from the
+- the [hp.obo file](http://purl.obolibrary.org/obo/hp.obo) from the
   [Human Phenotype Ontology Consortium](http://human-phenotype-ontology.org/).
 
 ##### Running the code
@@ -55,15 +55,15 @@ for each gene (data/example_genes.json), and the other listing HPO terms used
 for each proband (data/example_phenotypes.json). Analysis results are by default
 written to standard out. Run the code using the example datasets as:
 ```sh
-python3 hpo similarity.py \
+python3 hpo_similarity.py \
   --genes data/example_genes.json \
   --phenotypes data/example_phenotypes.json
 ```
 
 This will not give any significant P-values, it merely demonstrates how to run
-the code and proves that the code runs without errors. A real analysis requires
-a large population of probands with HPO terms for reliable information content
-scores, and to give a good population to sample from.
+the code and confirms that the code runs without errors. A real analysis
+requires a large population of probands with HPO terms for reliable information
+content scores, and to give a good population to sample from.
 
 You can optionally use:
 - `--output OUTPUT_PATH` to redirect the table of gene symbols and P values to a

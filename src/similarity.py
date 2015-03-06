@@ -33,28 +33,11 @@ class CalculateSimilarity(object):
         
         self.tally_hpo_terms(hpo_by_individual)
     
-    def fix_alternate_id(self, term):
-        """ converts HPO terms using alternate IDs to the standard term
-        
-        some of the HPO terms recorded for the probands, or in the DDG2P
-        database are alternate IDs for the HPO terms. If so, swap over to the
-        standard HPO term, as these are the node names in the HPO graph.
-        """
-        
-        if self.graph.has_node(term):
-            pass
-        elif term in self.alt_node_ids:
-            term = self.alt_node_ids[term]
-        else:
-            raise KeyError
-        
-        return term
-    
     def tally_hpo_terms(self, hpo_terms):
         """ tallies each HPO term across the DDG2P genes
         
         Args:
-            hpo_terms: hpo term dictionary
+            hpo_terms: dictionary of HPO terms for each individual
         """
         
         for item in hpo_terms:
@@ -69,7 +52,7 @@ class CalculateSimilarity(object):
         count of all terms.
         
         Args:
-            term: string for HPO term
+            term: HPO term (e.g. "HP:0000001")
         """
         
         if term not in self.hpo_counts:
@@ -140,8 +123,8 @@ class ICSimilarity(CalculateSimilarity):
     ic_cache = {}
     max_ic_cache = {}
     
-    def get_max_ic(self, term_1, term_2):
-        """ calculate the maximum information content between two HPO terms
+    def get_most_informative_ic(self, term_1, term_2):
+        """ calculate the information content between two HPO terms using the most informative common ancestor
         
         Args:
             term_1: hpo term, eg HP:0000003
@@ -153,8 +136,6 @@ class ICSimilarity(CalculateSimilarity):
         """
         
         terms = (term_1, term_2)
-        if term_2 < term_1:
-            terms = (term_2, term_1)
         
         if terms not in self.max_ic_cache:
             
@@ -162,6 +143,7 @@ class ICSimilarity(CalculateSimilarity):
             ic_values = [self.calculate_information_content(x) for x in ancestors]
             
             self.max_ic_cache[terms] = max(ic_values)
+            self.max_ic_cache[(term_2, term_1)] = max(ic_values)
         
         return self.max_ic_cache[terms]
     

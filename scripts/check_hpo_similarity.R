@@ -4,7 +4,7 @@ library(qqman)
 library(Cairo)
 
 
-HPO_PATH = "/nfs/users/nfs_j/jm33/apps/hpo_similarity/results/hpo_similarity.geomean.txt"
+HPO_PATH = "/nfs/users/nfs_j/jm33/apps/hpo_similarity/results/hpo_similarity.max.txt"
 ENRICHMENT_PATH = "/nfs/users/nfs_j/jm33/apps/mupit/results/de_novos.ddd_4k.with_diagnosed.ddd_only.enrichment_results.txt"
 DDG2P_PATH = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/DDG2P_freeze_with_gencode19_genomic_coordinates_20141118_fixed.txt"
 
@@ -60,7 +60,7 @@ plot_qq <- function(hpo, path) {
     # plot a QQ plot, and  HPO similarity P values vs enrichment P values
     Cairo(file=path, type="pdf", height=15, width=15, units="cm")
     qq(hpo$hpo_similarity_p_value, main="QQ plot of HPO similarity tests",
-        xlim=c(0, 4), ylim=c(0, 4), las=1)
+        xlim=c(0, 6), ylim=c(0, 6), las=1)
     
     plot(-log10(hpo$hpo_similarity_p_value), -log10(hpo$p_lof),
         main="HPO similarity vs LoF enrichment",
