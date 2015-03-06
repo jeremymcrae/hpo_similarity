@@ -121,7 +121,7 @@ class ICSimilarity(CalculateSimilarity):
     
     counts_cache = {}
     ic_cache = {}
-    max_ic_cache = {}
+    most_informative_cache = {}
     
     def get_most_informative_ic(self, term_1, term_2):
         """ calculate the information content between two HPO terms using the most informative common ancestor
@@ -137,15 +137,18 @@ class ICSimilarity(CalculateSimilarity):
         
         terms = (term_1, term_2)
         
-        if terms not in self.max_ic_cache:
+        if terms not in self.most_informative_cache:
             
             ancestors = self.find_common_ancestors(term_1, term_2)
             ic_values = [self.calculate_information_content(x) for x in ancestors]
             
-            self.max_ic_cache[terms] = max(ic_values)
-            self.max_ic_cache[(term_2, term_1)] = max(ic_values)
+            # cache the most informative IC value, so we only compute this once
+            # per pair of HPO terms.
+            most_informative = max(ic_values)
+            self.most_informative_cache[terms] = most_informative
+            self.most_informative_cache[(term_2, term_1)] = most_informative
         
-        return self.max_ic_cache[terms]
+        return self.most_informative_cache[terms]
     
     def calculate_information_content(self, term):
         """ calculates the information content for an hpo term
