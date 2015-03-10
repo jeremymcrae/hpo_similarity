@@ -19,7 +19,6 @@ import argparse
 import bisect
 import math
 import random
-import itertools
 
 from src.load_files import load_participants_hpo_terms, load_genes
 from src.ontology import Ontology
@@ -101,7 +100,7 @@ def get_proband_similarity(hpo_graph, probands):
     
     ic_scores = []
     for x in range(len(probands)):
-        for y in range(len(probands)):
+        for y in range(x, len(probands)):
             # don't match a proband to itself
             if x == y:
                 continue
