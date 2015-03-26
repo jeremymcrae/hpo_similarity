@@ -104,6 +104,10 @@ class Value(object):
         return "%s(%r, %r)" % (self.__class__.__name__, \
                 self.value, self.modifiers)
 
+    def __eq__(self, other):
+        """Checks if two Value objects are identical"""
+        return self.value == other.value and self.modifiers == other.modifiers
+
 
 class Stanza(object):
     """Class representing an OBO stanza.
@@ -149,6 +153,17 @@ class Stanza(object):
         return "%s(%r, %r)" % (self.__class__.__name__, \
                 self.name, self.tags)
 
+    def __eq__(self, other):
+        """Checks if two Stanza objects are identical"""
+        
+        if self.name != other.name:
+            return False
+        
+        if set(self.tags.keys()) != set(other.tags.keys()):
+            return False
+        
+        return all([self.tags[x] == other.tags[x] for x in self.tags])
+
 
 class Parser(object):
     """The main attraction, the OBO parser."""
@@ -170,10 +185,11 @@ class Parser(object):
         parser as if it were a list. The iterator yields `Stanza`
         objects.
         """
-        if IS_PYTHON3 and isinstance(fp, str):
+        try:
             fp = open(fp)
-        elif isinstance(fp, (str, unicode)):
-            fp = open(fp)
+        except TypeError:
+            pass
+        
         self.fp = fp
         self.line_re = re.compile(r"\s*(?P<tag>[^:]+):\s*(?P<value>.*)")
         self.lineno = 0
@@ -219,6 +235,8 @@ class Parser(object):
                     pass
 
             yield line
+
+        self.fp.close()
 
     def _parse_line(self, line):
         """Parses a single line consisting of a tag-value pair
