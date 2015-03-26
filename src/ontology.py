@@ -37,8 +37,6 @@ class Ontology(object):
             hpo_entries: list of entries in HPO database
         """
         
-        print("loading HPO ontology")
-        
         parser = Parser(hpo_path)
         hpo_entries = []
         for entry in parser:
@@ -58,18 +56,8 @@ class Ontology(object):
             nothing, updates the graph node within this function
         """
         
-        hpo_keys = ['comment', 'subset', 'xref', 'synonym', 'name', \
-                    'created_by', 'creation_date', 'def', 'alt_id']
-        
-        for key in hpo_keys:
-            if key in obo_tags:
-                if key not in graph.node[node_id]:
-                    graph.node[node_id][key] = []
-                
-                value = str(obo_tags[key][0])
-                graph.node[node_id][key].append(value)
-        
-        return graph
+        for key in obo_tags:
+            graph.node[node_id][key] = str(obo_tags[key][0])
 
     def track_alt_ids(self, obo_tags, node_id):
         """ track alternate HPO IDs, to map between alternate and canonical
@@ -103,11 +91,7 @@ class Ontology(object):
             True/False for whether the entry is obsolete
         """
         
-        if "is_obsolete" in obo_tags and str(obo_tags["is_obsolete"][0]) == "true":
-            self.obsolete_ids.add(str(obo_tags["id"][0]))
-            return True
-        
-        return False
+        return "is_obsolete" in obo_tags and str(obo_tags["is_obsolete"][0]) == "true"
 
     def get_graph(self):
         """ builds a networkx graph from obo parsed data
@@ -116,7 +100,6 @@ class Ontology(object):
             networkx graph object
         """
         
-        print("creating HPO graph")
         graph = networkx.DiGraph()
         
         # add the hpo header values as attributes for the graph
@@ -127,6 +110,7 @@ class Ontology(object):
             tags = entry.tags
             # ignore obsolete HPO entries
             if self.is_obsolete(tags):
+                self.obsolete_ids.add(str(tags["id"][0]))
                 continue
             
             node_id = str(tags["id"][0])
@@ -136,7 +120,7 @@ class Ontology(object):
             self.track_alt_ids(tags, node_id)
             
             # include the attribute data for the node
-            graph = self.add_hpo_attributes_to_node(graph, node_id, tags)
+            self.add_hpo_attributes_to_node(graph, node_id, tags)
             
             # add the predecessors to the node
             if "is_a" in tags:

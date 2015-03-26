@@ -51,4 +51,3 @@ def load_genes(path):
         genes = json.load(handle)
     
     return genes
-            

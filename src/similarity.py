@@ -14,7 +14,7 @@ class CalculateSimilarity(object):
     """ calculate graph similarity scores
     """
     
-    def __init__(self, hpo_by_individual, hpo_graph, alt_node_ids):
+    def __init__(self, hpo_by_individual, hpo_graph):
         """
         
         Args:
@@ -23,7 +23,6 @@ class CalculateSimilarity(object):
         """
         
         self.graph = hpo_graph
-        self.alt_node_ids = alt_node_ids
         
         self.descendant_cache = {}
         self.ancestor_cache = {}
@@ -40,8 +39,8 @@ class CalculateSimilarity(object):
             hpo_terms: dictionary of HPO terms for each individual
         """
         
-        for item in hpo_terms:
-            child_terms = hpo_terms[item]
+        for proband in hpo_terms:
+            child_terms = hpo_terms[proband]
             for term in child_terms:
                 self.add_hpo(term)
     
@@ -82,6 +81,11 @@ class CalculateSimilarity(object):
     
     def get_ancestors(self, bottom_term):
         """ finds the set of subterms that are ancestors of a HPO term
+        
+        NOTE: this also includes the search node in the list of ancestors. This
+        is so that when we look for matches of common ancestors between two
+        nodes, and the two node terms are for the same node, we also include the
+        common node in the list. That was awkwardly phrased.
         
         Args:
             bottom_term: hpo term to find ancestors of
