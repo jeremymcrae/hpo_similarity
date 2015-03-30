@@ -222,7 +222,7 @@ def main():
     if options.permute:
         probands_by_gene = permute_probands(probands_by_gene)
     
-    hpo_graph = ICSimilarity(hpo_by_proband, hpo_graph, alt_node_ids)
+    hpo_graph = ICSimilarity(hpo_by_proband, hpo_graph)
     
     print("analysing similarity")
     try:
