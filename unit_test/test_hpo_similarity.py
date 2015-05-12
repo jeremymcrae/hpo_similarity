@@ -48,7 +48,7 @@ class TestHpoSimilarityPy(unittest.TestCase):
         """
         
         # check the default probands
-        probands = self.hpo_terms.values()
+        probands = list(self.hpo_terms.values())
         self.assertEqual(get_proband_similarity(self.hpo_graph, probands), 0.916290731874155)
         
         # add another proband, who has a rare term that matches a term in
@@ -68,7 +68,7 @@ class TestHpoSimilarityPy(unittest.TestCase):
         # the two "rare" individuals is relatively close to 0.33.
         probands = ["person_03", "person_03"]
         p = test_similarity(self.hpo_graph, self.hpo_terms, probands, n_sims=1000)
-        self.assertLess(abs(p - 0.33), 0.03)
+        self.assertLess(abs(p - 0.33), 0.04)
         
         # now chose two individuals who do not share terms, and so the chance
         # that two random probands share their terms to the same extent is
