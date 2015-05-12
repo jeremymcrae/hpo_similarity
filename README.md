@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/jeremymcrae/hpo_similarity.svg?branch=master)]
+(https://travis-ci.org/jeremymcrae/hpo_similarity)
+
 #### Similarity of Human-Phenotype-Ontology (HPO) terms in patient groups.
 
 This code estimates the probability of a group of individuals sharing their HPO
