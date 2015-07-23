@@ -48,7 +48,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import print_function
 
 import sys
-IS_PYTHON3 = sys.version_info[0] == 3
 
 __author__  = "Tamas Nepusz"
 __email__   = "tamas@cs.rhul.ac.uk"
@@ -59,11 +58,10 @@ __version__ = "0.1"
 
 __all__ = ["ParseError", "Stanza", "Parser", "Value"]
 
-if IS_PYTHON3:
-    import io
-    StringIO = io.StringIO
-else:
+try:
     from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 import re
 import tokenize
 
