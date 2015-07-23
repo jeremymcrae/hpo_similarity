@@ -6,8 +6,8 @@ import unittest
 
 import networkx
 
-from src.ontology import Ontology
-from src.obo import Stanza, Value
+from hpo_similarity.ontology import Ontology
+from hpo_similarity.obo import Stanza, Value
 
 # define the header that will be parsed from the test obo dataset
 HEADER = {'default-namespace': ['human_phenotype'], 'ontology': ['hp'],\

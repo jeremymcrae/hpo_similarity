@@ -4,10 +4,10 @@
 import os
 import unittest
 
-from src.ontology import Ontology
-from src.similarity import ICSimilarity
-from hpo_similarity import get_score_for_pair, get_proband_similarity, \
-    test_similarity
+from hpo_similarity.ontology import Ontology
+from hpo_similarity.similarity import ICSimilarity
+from hpo_similarity.get_scores import get_score_for_pair, get_proband_similarity
+from hpo_similarity.test_similarity import test_similarity
 
 class TestHpoSimilarityPy(unittest.TestCase):
     """ class to test hpo similarity fucntions

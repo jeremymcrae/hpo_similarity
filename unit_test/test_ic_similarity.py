@@ -4,8 +4,8 @@
 import os
 import unittest
 
-from src.ontology import Ontology
-from src.similarity import ICSimilarity
+from hpo_similarity.ontology import Ontology
+from hpo_similarity.similarity import ICSimilarity
 
 class TestICSimilarityPy(unittest.TestCase):
     """ class to test ICSimilarity
