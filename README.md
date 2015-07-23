@@ -41,10 +41,13 @@ underlying relationships between HPO terms. Sampling probands seems better and
 simpler.
 
 
-##### Requirements
-There are two python package requirements, both of which are pip installable:
-- networkx
-- matplotlib
+##### Install
+Install the package with:
+```sh
+git clone https://github.com/jeremymcrae/hpo_similarity.git
+cd hpo_similarity
+python setup.py install --user
+```
 
 This code incorporates the following code and datasets:
 - a [python ontology parser](https://github.com/ntamas/gfam/blob/master/gfam/go/obo.py)
@@ -58,7 +61,7 @@ for each gene (data/example_genes.json), and the other listing HPO terms used
 for each proband (data/example_phenotypes.json). Analysis results are by default
 written to standard out. Run the code using the example datasets as:
 ```sh
-python3 hpo_similarity.py \
+python3 scripts/proband_similarity.py \
   --genes data/example_genes.json \
   --phenotypes data/example_phenotypes.json
 ```
