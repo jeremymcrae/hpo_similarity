@@ -7,9 +7,9 @@ install:
   - pip install coveralls
 script:
  - python -m unittest discover
- - python scripts/proband_similarity.py \
+ - "python scripts/proband_similarity.py \
    --genes data/example_genes.json \
-   --phenotypes data/example_phenotypes.json
+   --phenotypes data/example_phenotypes.json"
  - python -m coverage run --source=./ -m unittest discover
 after_success:
  - coveralls
