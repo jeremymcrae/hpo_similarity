@@ -1,5 +1,7 @@
 __pycache__/
 results/
+.coverage
+htmlcov/
 *.xlsx
 *.pyc
 *.pdf
