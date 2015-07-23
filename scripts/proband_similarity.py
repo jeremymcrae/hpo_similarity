@@ -57,8 +57,8 @@ def get_options():
         help="Path to JSON file listing phenotypes per proband. See \
             data/example_phenotypes.json for format.")
     parser.add_argument("--ontology", \
-        default=os.path.join(os.path.dirname(__file__), "data", "hp.obo"), \
-        help="path to HPO ontology obo file, see http://human-phenotype-ontology.org")
+        help="Optional path to HPO ontology obo file, see http://human-phenotype-ontology.org. " \
+              "By default, this uses the hpo file stored in hpo_similarity/data/hpo.obo")
     parser.add_argument("--output", default=sys.stdout, \
         help="path to output file, defaults to standard out.")
     parser.add_argument("--permute", action="store_true", default=False,

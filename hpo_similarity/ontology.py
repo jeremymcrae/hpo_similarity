@@ -24,6 +24,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+from pkg_resources import resource_filename
+
 import networkx
 
 from hpo_similarity.obo import Parser
@@ -54,6 +56,9 @@ class Ontology(object):
             parser.header: obo header for file
             hpo_entries: list of entries in HPO database
         """
+        
+        if hpo_path is None:
+            hpo_path = resource_filename(__name__, "data/hp.obo")
         
         parser = Parser(hpo_path)
         hpo_entries = []

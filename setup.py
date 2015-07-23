@@ -33,7 +33,7 @@ setup(
     install_requires=['networkx >= 1.8.1',
                       'matplotlib >= 1.4.0',
     ],
-    package_data={"data": ['hp.obo']},
+    package_data={"hpo_similarity": ['data/hp.obo']},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
