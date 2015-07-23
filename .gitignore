@@ -2,6 +2,9 @@ __pycache__/
 results/
 .coverage
 htmlcov/
+build/
+dist/
+*.egg-info/
 *.xlsx
 *.pyc
 *.pdf
