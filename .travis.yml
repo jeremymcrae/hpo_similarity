@@ -1,15 +1,15 @@
 language: python
 python:
-  - "3.3"
-  - "2.7"
+  - 3.3
+  - 2.7
 install:
-  - "pip install -r requirements.txt"
+  - python setup.py install
   - pip install coveralls
 script:
- - "python -m unittest discover"
- - "python hpo_similarity.py \
+ - python -m unittest discover
+ - python hpo_similarity.py \
    --genes data/example_genes.json \
-   --phenotypes data/example_phenotypes.json"
+   --phenotypes data/example_phenotypes.json
  - python -m coverage run --source=./ -m unittest discover
 after_success:
  - coveralls
