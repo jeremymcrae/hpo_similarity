@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 
 import networkx
 
-from src.obo import Parser
+from hpo_similarity.obo import Parser
 
 
 class Ontology(object):

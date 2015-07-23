@@ -16,15 +16,12 @@ from __future__ import unicode_literals
 import os
 import sys
 import argparse
-import bisect
-import math
-import random
 
-from src.load_files import load_participants_hpo_terms, load_genes
-from src.ontology import Ontology
-from src.similarity import ICSimilarity
-from src.permute_probands import permute_probands
-
+from hpo_similarity.load_files import load_participants_hpo_terms, load_genes
+from hpo_similarity.ontology import Ontology
+from hpo_similarity.similarity import ICSimilarity
+from hpo_similarity.permute_probands import permute_probands
+from hpo_similarity.analyse_genes import analyse_genes
 
 def get_options():
     """ get the command line switches
@@ -53,155 +50,6 @@ def get_options():
     args = parser.parse_args()
     
     return args
-
-def get_score_for_pair(hpo_graph, proband_1, proband_2):
-    """ Calculate the similarity in HPO terms between terms for two probands.
-    
-    This runs through the pairs of HPO terms from the two probands and finds
-    the information content for the most informative common ancestor for each
-    pair. We return the largest of these IC scores, known as the maxIC.
-    
-    Args:
-        hpo_graph: ICSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        proband_1: list of HPO terms for one proband
-        proband_2: list of HPO terms for the other proband
-    
-    Returns:
-        A score for how similar the terms are between the two probands.
-    """
-    
-    ic = []
-    for term_1 in proband_1:
-        for term_2 in proband_2:
-            ic.append(hpo_graph.get_most_informative_ic(term_1, term_2))
-    
-    return max(ic)
-    
-def get_proband_similarity(hpo_graph, probands):
-    """ calculate the similarity of HPO terms across different individuals.
-    
-    We start with a list of HPO lists e.g. [[HP:01, HP:02], [HP:02, HP:03]],
-    and calculate a matrix of similarity scores for each pair of probands in the
-    HPO lists. We collapse that to a single score that estimates the similarity
-    across all the probands.
-    
-    Args:
-        hpo_graph: ICSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        probands: List of HPO terms found for each proband with variants for
-            the current gene e.g. [[HP:01, HP:02], [HP:02, HP:03]].
-    
-    Returns:
-        The summed similarity score across the HPO terms for each proband.
-    """
-    
-    ic_scores = []
-    for x in range(len(probands)):
-        for y in range(x, len(probands)):
-            # don't match a proband to itself
-            if x == y:
-                continue
-            
-            # for each term in the proband, measure how well it matches the
-            # terms in another proband
-            score = get_score_for_pair(hpo_graph, probands[x], probands[y])
-            ic_scores.append(score)
-    
-    return sum(ic_scores)
-
-def test_similarity(hpo_graph, hpo_by_proband, probands, n_sims):
-    """ find if groups of probands per gene share HPO terms more than by chance.
-    
-    We simulate a distribution of similarity scores by randomly sampling groups
-    of probands. I tried matching the number of sampled HPO terms to the numbers
-    in the probands for the gene. For that, I gave each term the chance of being
-    sampled as the rate at which it was observed in all the probands. However,
-    these sampled terms gave abberant QQ plots, with excessive numbers of
-    extremely signficant P values. I suspect this is due to underlying
-    relationships between HPO terms.
-    
-    Args:
-        hpo_graph: ICSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        hpo_by_proband: dictionary of HPO terms per proband
-        probands: list of proband IDs.
-        n_sims: number of simulations to run.
-    
-    Returns:
-        The probability that the HPO terms used in the probands match as well as
-        they do.
-    """
-    
-    probands = [hpo_by_proband[x] for x in probands if x in hpo_by_proband]
-    other_probands = [x for x in hpo_by_proband if x not in probands]
-    
-    # We can't test similarity from a single proband. We don't call this
-    # function for genes with a single proband, however, sometimes only one of
-    # the probands has HPO terms recorded. We cannot estimate the phenotypic
-    # similarity between probands in this case, so return None instead.
-    if len(probands) < 2:
-        return None
-    
-    observed = get_proband_similarity(hpo_graph, probands)
-    
-    # get a distribution of scores for randomly sampled HPO terms
-    distribution = []
-    for x in range(n_sims):
-        sampled = random.sample(other_probands, len(probands))
-        simulated = [hpo_by_proband[n] for n in sampled]
-        predicted = get_proband_similarity(hpo_graph, simulated)
-        distribution.append(predicted)
-    
-    distribution = sorted(distribution)
-    
-    # figure out where in the distribution the observed value occurs
-    pos = bisect.bisect_left(distribution, observed)
-    sim_prob = (abs(pos - len(distribution)))/(1 + len(distribution))
-    
-    if sim_prob == 0:
-        sim_prob = 1 / (1 + len(distribution))
-    
-    return sim_prob
-
-def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iterations):
-    """ tests genes to see if their probands share HPO terms more than by chance.
-    
-    Args:
-        hpo_graph: ICSimilarity object for the HPO term graph, with
-            information on how many times each term has been used across all
-            probands.
-        hpo_by_proband: dictionary of HPO terms per proband
-        probands_by_gene: dictionary of genes, to the probands who have variants
-            in those genes.
-        output_path: path to file to write the results to, or sys.stdout object.
-        iterations: number of iterations to run.
-    """
-    
-    # Sometimes output_path is actually sys.stdout, other times it is a path.
-    try:
-        output = open(output_path, "w")
-    except TypeError:
-        output = output_path
-    
-    output.write("hgnc\thpo_similarity_p_value\n")
-    
-    for gene in sorted(probands_by_gene):
-        probands = probands_by_gene[gene]
-        
-        p_value = None
-        if len(probands) > 1:
-            p_value = test_similarity(hpo_graph, hpo_by_proband, probands, iterations)
-        
-        if p_value is None:
-            continue
-        
-        output.write("{0}\t{1}\n".format(gene, p_value))
-    
-    output.close()
 
 def main():
     
