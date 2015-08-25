@@ -27,15 +27,16 @@ import time
 SIMILARITY_DIR = "/nfs/users/nfs_j/jm33/apps/hpo_similarity"
 RECESSIVE_DIR = "/nfs/users/nfs_j/jm33/apps/recessiveStats"
 DATA_DIR = os.path.join(SIMILARITY_DIR, "data")
-ALL_GENES_PATH = os.path.join(RECESSIVE_DIR, "data-raw", "recessive_probands_by_gene.json")
+GENES_PATH = os.path.join(RECESSIVE_DIR, "data-raw", "recessive_probands_by_gene.json")
 PHENOTYPES_PATH = os.path.join(DATA_DIR, "phenotypes_by_proband.json")
 SIMILARITY_CODE = os.path.join(SIMILARITY_DIR, "scripts", "proband_similarity.py")
 
 # get the full list of genes and their probands
-with open(ALL_GENES_PATH, "r") as handle:
+with open(GENES_PATH, "r") as handle:
     genes = json.load(handle)
 
-
+basename = os.path.basename(GENES_PATH)
+basename, ext = os.path.splitext(basename)
 iteration = 1
 for_json = {}
 for gene in sorted(genes):
@@ -46,8 +47,8 @@ for gene in sorted(genes):
     for_json[gene] = genes[gene]
     
     if len(for_json) > 1:
-        gene_path = os.path.join(DATA_DIR, "recessive_probands.{0}.json".format(iteration))
-        output_path = os.path.join(SIMILARITY_DIR, "recessive.hpo_similarity.{0}.txt".format(iteration))
+        gene_path = os.path.join(DATA_DIR, "{}.{}.json".format(basename, iteration))
+        output_path = os.path.join(SIMILARITY_DIR, "{}.{}.txt".format(basename, iteration))
         
         # write an input file for the hpo similarity to run on
         with open(gene_path, "w") as output:
