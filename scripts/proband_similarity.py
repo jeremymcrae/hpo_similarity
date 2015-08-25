@@ -111,7 +111,7 @@ def main():
     print("analysing similarity")
     try:
         analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, \
-            options.output, options.iterations, args.score_type)
+            options.output, options.iterations, options.score_type)
     except KeyboardInterrupt:
         sys.exit("HPO similarity exited.")
 
