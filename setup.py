@@ -31,11 +31,12 @@ setup(
     license = "MIT",
     packages=["hpo_similarity"],
     install_requires=['networkx >= 1.8.1',
-                      'matplotlib >= 1.4.0',
+                      'matplotlib >= 1.3.1',
     ],
     package_data={"hpo_similarity": ['data/hp.obo']},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
-    ]
+    ],
+    test_suite="tests"
 )
