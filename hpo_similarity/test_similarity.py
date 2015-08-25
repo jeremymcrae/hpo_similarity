@@ -26,7 +26,7 @@ import random
 
 from hpo_similarity.get_scores import get_proband_similarity
 
-def test_similarity(hpo_graph, hpo_by_proband, probands, n_sims):
+def test_similarity(hpo_graph, hpo_by_proband, probands, n_sims, score_type):
     """ find if groups of probands per gene share HPO terms more than by chance.
     
     We simulate a distribution of similarity scores by randomly sampling groups
@@ -60,14 +60,14 @@ def test_similarity(hpo_graph, hpo_by_proband, probands, n_sims):
     if len(probands) < 2:
         return None
     
-    observed = get_proband_similarity(hpo_graph, probands)
+    observed = get_proband_similarity(hpo_graph, probands, score_type)
     
     # get a distribution of scores for randomly sampled HPO terms
     distribution = []
     for x in range(n_sims):
         sampled = random.sample(other_probands, len(probands))
         simulated = [hpo_by_proband[n] for n in sampled]
-        predicted = get_proband_similarity(hpo_graph, simulated)
+        predicted = get_proband_similarity(hpo_graph, simulated, score_type)
         distribution.append(predicted)
     
     distribution = sorted(distribution)

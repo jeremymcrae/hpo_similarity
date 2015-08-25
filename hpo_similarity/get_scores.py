@@ -19,7 +19,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-def get_score_for_pair(hpo_graph, proband_1, proband_2):
+from __future__ import division
+
+def get_resnik_score(hpo_graph, proband_1, proband_2):
     """ Calculate the similarity in HPO terms between terms for two probands.
     
     This runs through the pairs of HPO terms from the two probands and finds
@@ -43,8 +45,37 @@ def get_score_for_pair(hpo_graph, proband_1, proband_2):
             ic.append(hpo_graph.get_most_informative_ic(term_1, term_2))
     
     return max(ic)
+
+def get_simGIC_score(hpo_graph, proband_1, proband_2):
+    """ Calculate the similarity in HPO terms between terms for two probands.
     
-def get_proband_similarity(hpo_graph, probands):
+    This runs through the pairs of HPO terms from the two probands and finds
+    the simGIC score (http://funsimmat.bioinf.mpi-inf.mpg.de/help3.php), but
+    referenced to Pesquita et al., Proc 10th Annual Bio-Ontologies Meeting (2007)
+    
+    Args:
+        hpo_graph: ICSimilarity object for the HPO term graph, with
+            information on how many times each term has been used across all
+            probands.
+        proband_1: list of HPO terms for one proband
+        proband_2: list of HPO terms for the other proband
+    
+    Returns:
+        A score for how similar the terms are between the two probands.
+    """
+    
+    induced_graph_1 = set.union(*[ hpo_graph.get_ancestors(x) for x in proband_1 ])
+    induced_graph_2 = set.union(*[ hpo_graph.get_ancestors(x) for x in proband_2 ])
+    
+    intersect = induced_graph_1 & induced_graph_2
+    union = induced_graph_1 | induced_graph_2
+    
+    intersect = sum([ hpo_graph.calculate_information_content(x) for x in intersect ])
+    union = sum([ hpo_graph.calculate_information_content(x) for x in union ])
+    
+    return intersect/union
+
+def get_proband_similarity(hpo_graph, probands, score_type="resnik"):
     """ calculate the similarity of HPO terms across different individuals.
     
     We start with a list of HPO lists e.g. [[HP:01, HP:02], [HP:02, HP:03]],
@@ -58,10 +89,15 @@ def get_proband_similarity(hpo_graph, probands):
             probands.
         probands: List of HPO terms found for each proband with variants for
             the current gene e.g. [[HP:01, HP:02], [HP:02, HP:03]].
+        score_type: type of similarity score to compare probands with.
     
     Returns:
         The summed similarity score across the HPO terms for each proband.
     """
+    
+    # pick the function to calculate the proband pairwise scores with
+    funcs = {"resnik": get_resnik_score, "simGIC": get_simGIC_score}
+    get_score = funcs[score_type]
     
     ic_scores = []
     for x in range(len(probands)):
@@ -72,7 +108,7 @@ def get_proband_similarity(hpo_graph, probands):
             
             # for each term in the proband, measure how well it matches the
             # terms in another proband
-            score = get_score_for_pair(hpo_graph, probands[x], probands[y])
+            score = get_score(hpo_graph, probands[x], probands[y])
             ic_scores.append(score)
     
     return sum(ic_scores)

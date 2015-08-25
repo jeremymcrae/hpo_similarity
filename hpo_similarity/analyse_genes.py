@@ -21,7 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from hpo_similarity.test_similarity import test_similarity
 
-def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iterations):
+def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iterations, score_type):
     """ tests genes to see if their probands share HPO terms more than by chance.
     
     Args:
@@ -48,7 +48,7 @@ def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iter
         
         p_value = None
         if len(probands) > 1:
-            p_value = test_similarity(hpo_graph, hpo_by_proband, probands, iterations)
+            p_value = test_similarity(hpo_graph, hpo_by_proband, probands, iterations, score_type)
         
         if p_value is None:
             continue

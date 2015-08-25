@@ -68,7 +68,22 @@ def get_options():
         help="whether to permute the probands across genes, in order to assess \
             method robustness.")
     
+    # allow for using different similarity scoring metrics
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--resnik", default="False", action="store_true",
+        help="whether to use Resnik's measure of similarity (the default).")
+    group.add_argument("--simgic", "--simGIC", default="False", action="store_true",
+        help="whether to use simGIC measure of similarity.")
+    
     args = parser.parse_args()
+    
+    # figure out the score type
+    if args.resnik:
+        args.score_type = "resnik"
+    elif args.simgic:
+        args.score_type = "simGIC"
+    else:
+        args.score_type = "resnik"
     
     return args
 
@@ -96,7 +111,7 @@ def main():
     print("analysing similarity")
     try:
         analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, \
-            options.output, options.iterations)
+            options.output, options.iterations, args.score_type)
     except KeyboardInterrupt:
         sys.exit("HPO similarity exited.")
 
