@@ -26,10 +26,9 @@ DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
 PHENOTYPES_PATH = os.path.join(DATAFREEZE_DIR, "phenotypes_and_patient_info.txt")
 ALTERNATE_IDS_PATH = os.path.join(DATAFREEZE_DIR, "person_sanger_decipher.txt")
 
-USER_DIR = "/nfs/users/nfs_j/jm33/"
-VARIANTS_PATH = os.path.join(USER_DIR, "apps/mupit/data-raw/de_novo_datasets/de_novos.ddd_4k.ddd_only.txt")
-PHENOTYPES_OUT = os.path.join(USER_DIR, "apps/hpo_similarity/data/phenotypes_by_proband.json")
-GENES_OUT = os.path.join(USER_DIR, "apps/hpo_similarity/data/probands_by_gene.json")
+VARIANTS_PATH = "/lustre/scratch113/projects/ddd/users/jm33/de_novos.ddd_4k.ddd_only.txt"
+PHENOTYPES_OUT = "phenotypes_by_proband.json"
+GENES_OUT = "probands_by_gene.json"
 
 
 def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
