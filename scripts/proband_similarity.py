@@ -74,6 +74,8 @@ def get_options():
         help="whether to use Resnik's measure of similarity (the default).")
     group.add_argument("--simgic", "--simGIC", default="False", action="store_true",
         help="whether to use simGIC measure of similarity.")
+    group.add_argument("--lin", default="False", action="store_true",
+        help="whether to use Lin's measure of semantic similarity.")
     
     args = parser.parse_args()
     
@@ -82,6 +84,8 @@ def get_options():
         args.score_type = "resnik"
     elif args.simgic:
         args.score_type = "simGIC"
+    elif args.lin:
+        args.score_type = "lin"
     else:
         args.score_type = "resnik"
     

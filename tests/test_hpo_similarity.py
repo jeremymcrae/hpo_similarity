@@ -79,7 +79,7 @@ class TestHpoSimilarityPy(unittest.TestCase):
         # another proband
         probands.append(["HP:0000924", "HP:0000118"])
         self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "resnik"), 2.525728644308255)
-        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "simGIC"), 2.0)
+        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "simGIC"), 3.0)
     
     def test_test_similarity(self):
         """ check that test_similarity works correctly

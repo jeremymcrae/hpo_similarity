@@ -28,6 +28,9 @@ def get_resnik_score(hpo_graph, proband_1, proband_2):
     the information content for the most informative common ancestor for each
     pair. We return the largest of these IC scores, known as the maxIC.
     
+    Reference:
+        Resnik, J Artif Intell Res (1999), 11:95-130.
+    
     Args:
         hpo_graph: ICSimilarity object for the HPO term graph, with
             information on how many times each term has been used across all
@@ -46,12 +49,15 @@ def get_resnik_score(hpo_graph, proband_1, proband_2):
     
     return max(ic)
 
-def get_simGIC_score(hpo_graph, proband_1, proband_2):
+def get_lin_score(hpo_graph, proband_1, proband_2):
     """ Calculate the similarity in HPO terms between terms for two probands.
     
     This runs through the pairs of HPO terms from the two probands and finds
-    the simGIC score (http://funsimmat.bioinf.mpi-inf.mpg.de/help3.php), but
-    referenced to Pesquita et al., Proc 10th Annual Bio-Ontologies Meeting (2007)
+    Lin's measure of semantic similarity for each pair. We return the most
+    informative score, i.e. the largest.
+    
+    Reference:
+        Lin, Proc 15th Int'l Conf. on Machine Learning (ICML-98) (1998), 296-304.
     
     Args:
         hpo_graph: ICSimilarity object for the HPO term graph, with
@@ -64,16 +70,59 @@ def get_simGIC_score(hpo_graph, proband_1, proband_2):
         A score for how similar the terms are between the two probands.
     """
     
-    induced_graph_1 = set.union(*[ hpo_graph.get_ancestors(x) for x in proband_1 ])
-    induced_graph_2 = set.union(*[ hpo_graph.get_ancestors(x) for x in proband_2 ])
+    ic = []
+    for term_1 in proband_1:
+        for term_2 in proband_2:
+            a = 2 * hpo_graph.get_most_informative_ic(term_1, term_2)
+            
+            b = hpo_graph.calculate_information_content(term_1)
+            c = hpo_graph.calculate_information_content(term_2)
+            
+            try:
+                ic.append(a/(b + c))
+            except ZeroDivisionError:
+                ic.append(0)
     
-    intersect = induced_graph_1 & induced_graph_2
-    union = induced_graph_1 | induced_graph_2
+    return max(ic)
+
+def get_simGIC_score(hpo_graph, proband_1, proband_2):
+    """ Calculate the similarity in HPO terms between terms for two probands.
     
-    intersect = sum([ hpo_graph.calculate_information_content(x) for x in intersect ])
-    union = sum([ hpo_graph.calculate_information_content(x) for x in union ])
+    This runs through the pairs of HPO terms from the two probands and finds
+    the simGIC score (http://funsimmat.bioinf.mpi-inf.mpg.de/help3.php).
     
-    return intersect/union
+    Reference:
+        Pesquita et al., Proc 10th Annual Bio-Ontologies Meeting (2007)
+    
+    Args:
+        hpo_graph: ICSimilarity object for the HPO term graph, with
+            information on how many times each term has been used across all
+            probands.
+        proband_1: list of HPO terms for one proband
+        proband_2: list of HPO terms for the other proband
+    
+    Returns:
+        A score for how similar the terms are between the two probands.
+    """
+    
+    scores = []
+    for term_1 in proband_1:
+        for term_2 in proband_2:
+            graph_1 = hpo_graph.get_ancestors(term_1)
+            graph_2 = hpo_graph.get_ancestors(term_2)
+            
+            intersect = graph_1 & graph_2
+            union = graph_1 | graph_2
+            
+            intersect = sum([ hpo_graph.calculate_information_content(x) for x in intersect ])
+            union = sum([ hpo_graph.calculate_information_content(x) for x in union ])
+            
+            try:
+                scores.append(intersect/union)
+            except ZeroDivisionError:
+                scores.append(1)
+    
+    return max(scores)
 
 def get_proband_similarity(hpo_graph, probands, score_type="resnik"):
     """ calculate the similarity of HPO terms across different individuals.
@@ -96,7 +145,8 @@ def get_proband_similarity(hpo_graph, probands, score_type="resnik"):
     """
     
     # pick the function to calculate the proband pairwise scores with
-    funcs = {"resnik": get_resnik_score, "simGIC": get_simGIC_score}
+    funcs = {"resnik": get_resnik_score, "simGIC": get_simGIC_score, \
+        "lin": get_lin_score}
     get_score = funcs[score_type]
     
     ic_scores = []
