@@ -147,12 +147,12 @@ def get_random_string(prefix=None):
     
     return hash_string
 
-def split_genes(genes, temp_dir):
-    """
+def split_genes(genes_path, temp_dir):
+    """ split probands by gene into many separate files with fewer genes
     """
     
     # get the full list of genes and their probands
-    with open(args.genes, "r") as handle:
+    with open(genes_path, "r") as handle:
         genes = json.load(handle)
     
     iteration = 1
@@ -166,14 +166,14 @@ def split_genes(genes, temp_dir):
         
         if len(for_json) > 1:
             # write an input file for the hpo similarity to run on
-            path = os.path.join(temp_dir, iteration)
+            path = os.path.join(temp_dir, "tmp.{}.txt".format(iteration))
             with open(path, "w") as output:
                 json.dump(for_json, output, indent=4, sort_keys=True)
             
             for_json = {}
             iteration += 1
     
-    return iteration
+    return iteration - 1
 
 def main():
     
@@ -187,8 +187,8 @@ def main():
     job_name = "hpoSauce"
     job_id = "{0}[1-{1}]%50".format(job_name, count)
     
-    infile = os.path.join(temp_dir, "\$LSB_JOBINDEX\\")
-    outfile = os.path.join(temp_dir, "\$LSB_JOBINDEX\.output")
+    infile = os.path.join(temp_dir, "tmp.\$LSB_JOBINDEX\.txt")
+    outfile = os.path.join(temp_dir, "tmp.\$LSB_JOBINDEX\.output")
     
     command = ["python", args.script, \
         "--genes", infile, \
@@ -199,16 +199,13 @@ def main():
     
     # merge the array output after the array finishes
     merge_id = "merge1_" + job_name
-    command = ["head", "-n", "1", os.path.join(temp_dir, "1.output"), ">", args.out, \
-        "; tail", "-q", "-n", "+2", os.path.join(temp_dir, "*.output"), "|", "sort", "">>", args.out]
+    command = ["head", "-n", "1", os.path.join(temp_dir, "tmp.1.output"), ">", args.out, \
+        "; tail", "-q", "-n", "+2", os.path.join(temp_dir, "tmp.*.output"), "|", "sort", ">>", args.out]
     submit_bsub_job(command, merge_id, dependent_id=job_id)
     time.sleep(2)
     
     # submit a cleanup job to the cluster
-    cleanup_id = "cleanup"
-    command = ["rm", "-r" temp_dir]
-    submit_bsub_job(command, cleanup_id, dependent_id=merge_id)
-    
+    submit_bsub_job(["rm", "-r", temp_dir], job_id="cleanup", dependent_id=merge_id)
 
 if __name__ == '__main__':
     main()
