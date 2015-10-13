@@ -27,14 +27,19 @@ import time
 import random
 import tempfile
 
-SIMILARITY_DIR = "/nfs/users/nfs_j/jm33/apps/hpo_similarity"
-RECESSIVE_DIR = "/nfs/users/nfs_j/jm33/apps/recessiveStats"
-DATA_DIR = os.path.join(SIMILARITY_DIR, "data")
-# GENES_PATH = os.path.join(RECESSIVE_DIR, "data-raw", "recessive_probands_by_gene.silent.json")
-GENES_PATH = os.path.join(DATA_DIR, "probands_by_gene.without_diagnosed.json")
-PHENOTYPES_PATH = os.path.join(DATA_DIR, "phenotypes_by_proband.json")
-SIMILARITY_CODE = os.path.join(SIMILARITY_DIR, "scripts", "proband_similarity.py")
-LUSTRE_DIR = "/lustre/scratch113/projects/ddd/users/jm33/temp/tmp"
+def get_options():
+    
+    parser = argparse.ArgumentParser(description="helper script to run similarity" \
+        "testing on a LSF cluster.")
+    parser.add_argument("--script", required=True, help="Path to hpo similarity script")
+    parser.add_argument("--phenotypes", required=True, help="path to phenotypes by proband JSON")
+    parser.add_argument("--genes", required=True, help="path to probands by gene JSON")
+    parser.add_argument("--temp-dir", required=True, help="path to hold intermediate files")
+    parser.add_argument("--out", required=True, help="path to final output file")
+    
+    args = parser.parse_args()
+    
+    return args
 
 def get_bjobs():
     """ get a list of submitted jobs
@@ -142,67 +147,68 @@ def get_random_string(prefix=None):
     
     return hash_string
 
-# get the full list of genes and their probands
-with open(GENES_PATH, "r") as handle:
-    genes = json.load(handle)
-
-basename = os.path.basename(GENES_PATH)
-basename, ext = os.path.splitext(basename)
-# iteration = 1
-for_json = {}
-job_ids = []
-result_paths = []
-input_paths = []
-for gene in sorted(genes):
-    # don't include genes with insufficient probands for similarity analysis
-    if len(genes[gene]) < 2:
-        continue
+def split_genes(genes, temp_dir):
+    """
+    """
     
-    while len(get_bjobs()) > 200:
-        time.sleep(30)
+    # get the full list of genes and their probands
+    with open(args.genes, "r") as handle:
+        genes = json.load(handle)
     
-    for_json[gene] = genes[gene]
+    iteration = 1
+    for_json = {}
+    for gene in sorted(genes):
+        # don't include genes with insufficient probands for similarity analysis
+        if len(genes[gene]) < 2:
+            continue
+        
+        for_json[gene] = genes[gene]
+        
+        if len(for_json) > 1:
+            # write an input file for the hpo similarity to run on
+            path = os.path.join(temp_dir, iteration)
+            with open(path, "w") as output:
+                json.dump(for_json, output, indent=4, sort_keys=True)
+            
+            for_json = {}
+            iteration += 1
     
-    if len(for_json) > 1:
-        # gene_path = os.path.join(DATA_DIR, "{}.{}.json".format(basename, iteration))
-        # output_path = os.path.join(SIMILARITY_DIR, "{}.{}.txt".format(basename, iteration))
-        outfile = tempfile.NamedTemporaryFile(prefix=LUSTRE_DIR, suffix=".txt", delete=False)
-        
-        # write an input file for the hpo similarity to run on
-        infile = tempfile.NamedTemporaryFile(prefix=LUSTRE_DIR, suffix=".json", delete=False)
-        json.dump(for_json, infile, indent=4, sort_keys=True)
-        infile.close()
-        
-        command = ["python", SIMILARITY_CODE, \
-            "--genes", infile.name, \
-            "--phenotypes", PHENOTYPES_PATH, \
-            "--output", outfile.name,
-            "--resnik"]
-        job_id = get_random_string()
-        submit_bsub_job(command, job_id, memory=2000, logfile="similarity_hpo.bjob_output.txt")
-        time.sleep(0.5)
-        
-        for_json = {}
-        # iteration += 1
-        job_ids.append(job_id)
-        result_paths.append(outfile.name)
-        input_paths.append(infile.name)
+    return iteration
 
-while len([ x for x in get_bjobs() if x["job_name"] in job_ids ]) > 0:
-    time.sleep(30)
+def main():
+    
+    args = get_options()
+    
+    temp_dir = tempfile.mkdtemp(prefix=args.temp_dir)
+    
+    count = split_genes(args.genes, temp_dir)
+    
+    # set up run parameters
+    job_name = "hpoSauce"
+    job_id = "{0}[1-{1}]%50".format(job_name, count)
+    
+    infile = os.path.join(temp_dir, "\$LSB_JOBINDEX\\")
+    outfile = os.path.join(temp_dir, "\$LSB_JOBINDEX\.output")
+    
+    command = ["python", args.script, \
+        "--genes", infile, \
+        "--phenotypes", args.phenotypes, \
+        "--output", outfile,
+        "--resnik"]
+    submit_bsub_job(command, job_id, memory=2000, logfile="similarity_hpo.bjob")
+    
+    # merge the array output after the array finishes
+    merge_id = "merge1_" + job_name
+    command = ["head", "-n", "1", os.path.join(temp_dir, "1.output"), ">", args.out, \
+        "; tail", "-q", "-n", "+2", os.path.join(temp_dir, "*.output"), "|", "sort", "">>", args.out]
+    submit_bsub_job(command, merge_id, dependent_id=job_id)
+    time.sleep(2)
+    
+    # submit a cleanup job to the cluster
+    cleanup_id = "cleanup"
+    command = ["rm", "-r" temp_dir]
+    submit_bsub_job(command, cleanup_id, dependent_id=merge_id)
+    
 
-# delete all the temporary input files
-a = [ os.remove(x) for x in input_paths ]
-
-output = open(os.path.join(SIMILARITY_DIR, "{}.txt".format(basename)), "w")
-output.write("hgnc\thpo_similarity_p_value\n")
-genes = []
-for x in result_paths:
-    with open(x) as handle:
-        header = handle.readline()
-        genes += handle.readlines()
-    os.remove(x)
-
-genes = sorted(genes)
-output.writelines(genes)
-output.close()
+if __name__ == '__main__':
+    main()
