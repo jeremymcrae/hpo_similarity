@@ -21,15 +21,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
 import json
+import argparse
 
-DATAFREEZE_DIR = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-PHENOTYPES_PATH = os.path.join(DATAFREEZE_DIR, "phenotypes_and_patient_info.txt")
-ALTERNATE_IDS_PATH = os.path.join(DATAFREEZE_DIR, "person_sanger_decipher.txt")
-
-VARIANTS_PATH = "/lustre/scratch113/projects/ddd/users/jm33/de_novos.ddd_4k.ddd_only.txt"
-PHENOTYPES_OUT = "phenotypes_by_proband.json"
-GENES_OUT = "probands_by_gene.json"
-
+def get_options():
+    
+    parser = argparse.ArgumentParser(description="prepare the HPO terms from" \
+        "probands in the DDD study.")
+    parser.add_argument("--phenotypes", required=True, help="Path to table of" \
+        "phenotypes per proband, including child HPO terms.")
+    parser.add_argument("--sample-ids", required=True, help="Path to file that"
+        "maps between sample IDs for participants in the DDD study.")
+    parser.add_argument("--out", required=True)
+    
+    args = parser.parse_args()
 
 def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
     """ loads patient HPO terms
@@ -98,48 +102,9 @@ def load_alt_id_map(alt_id_path):
     
     return alt_ids
 
-def prepare_genes(path, output_path):
-    """ load probands per gene from de novo variant file
-    
-    Args:
-        path: path to de novo variant containing file.
-        output_path: path to save probands per gene as JSON-encoded file.
-    """
-    
-    functional = set(["stop_gained", "splice_acceptor_variant",
-        "splice_donor_variant", "frameshift_variant", "missense_variant",
-        "initiator_codon_variant", "stop_lost", "inframe_deletion",
-        "inframe_insertion", "splice_region_variant"])
-    
-    genes = {}
-    with open(path) as handle:
-        header = handle.readline()
-        
-        for line in handle:
-            line = line.strip().split("\t")
-            
-            proband_id = line[0]
-            hgnc_symbol = line[8]
-            consequence = line[10]
-            
-            if consequence not in functional:
-                continue
-            
-            if hgnc_symbol not in genes:
-                genes[hgnc_symbol] = set()
-            
-            genes[hgnc_symbol].add(proband_id)
-    
-    for hgnc in genes:
-        genes[hgnc] = list(genes[hgnc])
-    
-    with open(output_path, "w") as output:
-        json.dump(genes, output, indent=4, sort_keys=True)
-
 def main():
-    
-    prepare_participants_hpo_terms(PHENOTYPES_PATH, ALTERNATE_IDS_PATH, PHENOTYPES_OUT)
-    prepare_genes(VARIANTS_PATH, GENES_OUT)
+    args = get_options()
+    prepare_participants_hpo_terms(args.phenotypes, args.sample_ids, args.out)
 
 if __name__ == "__main__":
     main()
