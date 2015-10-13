@@ -34,6 +34,8 @@ def get_options():
     parser.add_argument("--out", required=True)
     
     args = parser.parse_args()
+    
+    return args
 
 def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
     """ loads patient HPO terms
