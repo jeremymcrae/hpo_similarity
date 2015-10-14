@@ -201,11 +201,12 @@ def main():
     merge_id = "merge1_" + job_name
     command = ["head", "-n", "1", os.path.join(temp_dir, "tmp.1.output"), ">", args.out, \
         "; tail", "-q", "-n", "+2", os.path.join(temp_dir, "tmp.*.output"), "|", "sort", ">>", args.out]
-    submit_bsub_job(command, merge_id, dependent_id=job_id)
+    submit_bsub_job(command, merge_id, dependent_id=job_id, logfile="hpo_similarity.bjob")
     time.sleep(2)
     
     # submit a cleanup job to the cluster
-    submit_bsub_job(["rm", "-r", temp_dir], job_id="cleanup", dependent_id=merge_id)
+    submit_bsub_job(["rm", "-r", temp_dir], job_id="cleanup", \
+        dependent_id=merge_id, logfile="hpo_similarity.bjob")
 
 if __name__ == '__main__':
     main()
