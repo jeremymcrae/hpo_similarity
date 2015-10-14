@@ -195,7 +195,7 @@ def main():
         "--phenotypes", args.phenotypes, \
         "--output", outfile,
         "--resnik"]
-    submit_bsub_job(command, job_id, memory=2000, logfile="similarity_hpo.bjob")
+    submit_bsub_job(command, job_id, memory=2000, logfile="hpo_similarity.bjob")
     
     # merge the array output after the array finishes
     merge_id = "merge1_" + job_name
