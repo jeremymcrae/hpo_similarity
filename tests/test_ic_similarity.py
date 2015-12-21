@@ -35,7 +35,7 @@ class TestICSimilarityPy(unittest.TestCase):
         
         path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
         ontology = Ontology(path)
-        graph = ontology.get_graph()
+        self.hpo_graph = ontology.get_graph()
         
         self.hpo_terms = {
             "person_01": ["HP:0000924"],
@@ -43,7 +43,7 @@ class TestICSimilarityPy(unittest.TestCase):
             "person_03": ["HP:0000707", "HP:0002011"]
         }
         
-        self.hpo_graph = ICSimilarity(self.hpo_terms, graph)
+        self.hpo_graph.tally_hpo_terms(self.hpo_terms)
     
     def test_get_term_count(self):
         """ check that get_term_count works correctly

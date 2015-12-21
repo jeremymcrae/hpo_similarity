@@ -25,29 +25,20 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import math
-import networkx
+from networkx import DiGraph
 
-class CalculateSimilarity(object):
+class CalculateSimilarity(DiGraph):
     """ calculate graph similarity scores
     """
     
-    def __init__(self, hpo_by_individual, hpo_graph):
-        """
-        
-        Args:
-            hpo_by_individual: dictionary of hpo terms for each individual
-            graph: graph of hpo ontology, as networkx object
-        """
-        
-        self.graph = hpo_graph
-        
+    def __init__(self):
         self.descendant_cache = {}
         self.ancestor_cache = {}
-        
+
         self.hpo_counts = {}
         self.total_freq = 0
         
-        self.tally_hpo_terms(hpo_by_individual)
+        super(CalculateSimilarity, self).__init__()
     
     def tally_hpo_terms(self, hpo_terms):
         """ tallies each HPO term across the DDG2P genes
@@ -73,7 +64,7 @@ class CalculateSimilarity(object):
         
         if term not in self.hpo_counts:
             # don't use terms which cannot be placed on the graph
-            if not self.graph.has_node(term):
+            if not self.has_node(term):
                 return
             
             self.hpo_counts[term] = 0
@@ -92,7 +83,13 @@ class CalculateSimilarity(object):
         """
         
         if term not in self.descendant_cache:
-            self.descendant_cache[term] = networkx.descendants(self.graph, term)
+            terms = set(self.successors(term))
+            
+            # recursively extend up the graph until we hit the top node
+            extra = [ self.get_descendants(x) for x in terms ]
+            terms |= set([item for sublist in extra for item in sublist])
+            
+            self.descendant_cache[term] = terms
         
         return self.descendant_cache[term]
     
@@ -112,7 +109,12 @@ class CalculateSimilarity(object):
         """
         
         if bottom_term not in self.ancestor_cache:
-            subterms = networkx.ancestors(self.graph, bottom_term)
+            subterms = set(self.predecessors(bottom_term))
+            
+            # recursively extend down the graph until we hit the bottom nodes
+            extra = [ self.get_ancestors(x) for x in subterms ]
+            subterms |= set([item for sublist in extra for item in sublist])
+            
             subterms.add(bottom_term)
             self.ancestor_cache[bottom_term] = subterms
         
@@ -130,7 +132,7 @@ class CalculateSimilarity(object):
         """
         
         # ignore terms that are obsolete (ie are not in the graph)
-        if term_1 not in self.graph or term_2 not in self.graph:
+        if term_1 not in self or term_2 not in self:
             return set()
         
         return set(self.get_ancestors(term_1)) & set(self.get_ancestors(term_2))
@@ -143,6 +145,10 @@ class ICSimilarity(CalculateSimilarity):
     counts_cache = {}
     ic_cache = {}
     most_informative_cache = {}
+    
+    def __init__(self):
+        
+        super(ICSimilarity, self).__init__()
     
     def get_most_informative_ic(self, term_1, term_2):
         """ calculate the information content between two HPO terms using the most informative common ancestor
@@ -187,7 +193,7 @@ class ICSimilarity(CalculateSimilarity):
         if term not in self.ic_cache:
             term_count = self.get_term_count(term)
             
-            if term not in self.graph:
+            if term not in self:
                 return 0
             
             # cache the IC, so we don't have to recalculate for the term
@@ -206,7 +212,7 @@ class ICSimilarity(CalculateSimilarity):
         """
         
         if term not in self.counts_cache:
-            if term not in self.graph:
+            if term not in self:
                 return 0
             
             descendants = self.get_descendants(term)

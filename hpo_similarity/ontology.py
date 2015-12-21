@@ -26,8 +26,7 @@ from __future__ import unicode_literals
 
 from pkg_resources import resource_filename
 
-import networkx
-
+from hpo_similarity.similarity import ICSimilarity
 from hpo_similarity.obo import Parser
 
 
@@ -123,7 +122,7 @@ class Ontology(object):
             networkx graph object
         """
         
-        graph = networkx.DiGraph()
+        graph = ICSimilarity()
         
         # add the hpo header values as attributes for the graph
         for header_id in self.hpo_header:

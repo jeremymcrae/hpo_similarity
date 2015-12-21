@@ -97,7 +97,7 @@ def main():
     
     # build a graph of HPO terms, so we can trace paths between terms
     hpo_ontology = Ontology(options.ontology)
-    hpo_graph = hpo_ontology.get_graph()
+    graph = hpo_ontology.get_graph()
     alt_node_ids = hpo_ontology.get_alt_ids()
     obsolete_ids = hpo_ontology.get_obsolete_ids()
     
@@ -110,11 +110,11 @@ def main():
     if options.permute:
         probands_by_gene = permute_probands(probands_by_gene)
     
-    hpo_graph = ICSimilarity(hpo_by_proband, hpo_graph)
+    graph.tally_hpo_terms(hpo_by_proband)
     
     print("analysing similarity")
     try:
-        analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, \
+        analyse_genes(graph, hpo_by_proband, probands_by_gene, \
             options.output, options.iterations, options.score_type)
     except KeyboardInterrupt:
         sys.exit("HPO similarity exited.")
