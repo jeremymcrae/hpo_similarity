@@ -31,23 +31,27 @@ def get_options():
         "phenotypes per proband, including child HPO terms.")
     parser.add_argument("--sample-ids", required=True, help="Path to file that"
         "maps between sample IDs for participants in the DDD study.")
+    parser.add_argument("--trios", required=True, help="Path to file that"
+        "defines the probands in exome-sequenced trios.")
     parser.add_argument("--out", required=True)
     
     args = parser.parse_args()
     
     return args
 
-def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
+def prepare_participants_hpo_terms(pheno_path, alt_id_path, trio_path, output_path):
     """ loads patient HPO terms
     
     Args:
         pheno_path: path to patient pheotype file, containing one line per
             proband, with HPO codes as a field in the line.
         alt_id_path: path to set of alternate IDs for each individual
+        trio_path: path to set of alternate IDs for each individual
         output_path: path to save HPO terms per proband as JSON-encoded file.
     """
     
     alt_ids = load_alt_id_map(alt_id_path)
+    trio_probands = load_trio_probands(trio_path)
     
     # load the phenotype data for each participant
     handle = open(pheno_path, "r")
@@ -70,6 +74,11 @@ def prepare_participants_hpo_terms(pheno_path, alt_id_path, output_path):
         # swap the proband across to the DDD ID if it exists
         if proband_id in alt_ids:
             proband_id = alt_ids[proband_id]
+        
+        # if we are only looking at probands in the trios, make sure that the
+        # current proband is one from a trio.
+        if trio_probands is not None and proband_id not in trio_probands:
+            continue
         
         if "|" in child_terms:
             child_terms = child_terms.split("|")
@@ -104,9 +113,31 @@ def load_alt_id_map(alt_id_path):
     
     return alt_ids
 
+def load_trio_probands(trio_path):
+    """ load the DDD IDs for probands in trios
+    
+    Args:
+        trio_path: path to file listing trios, or None if no path was passed in.
+        
+    Returns:
+        set of proband IDs, or None if we lack a trio list
+    """
+    
+    if trio_path is None:
+        return None
+    
+    proband_ids = set()
+    with open(trio_path) as handle:
+        for line in handle:
+            line = line.split("\t")
+            proband_ids.add(line[1])
+    
+    return proband_ids
+
 def main():
     args = get_options()
-    prepare_participants_hpo_terms(args.phenotypes, args.sample_ids, args.out)
+    prepare_participants_hpo_terms(args.phenotypes, args.sample_ids, \
+        args.trios, args.out)
 
 if __name__ == "__main__":
     main()
