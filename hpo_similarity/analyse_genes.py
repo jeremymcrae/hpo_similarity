@@ -19,6 +19,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from hpo_similarity.check_proband_terms import check_terms_in_graph
 from hpo_similarity.test_similarity import test_similarity
 
 def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iterations, score_type):
@@ -34,6 +35,8 @@ def analyse_genes(hpo_graph, hpo_by_proband, probands_by_gene, output_path, iter
         output_path: path to file to write the results to, or sys.stdout object.
         iterations: number of iterations to run.
     """
+    
+    check_terms_in_graph(hpo_graph, hpo_by_proband)
     
     # Sometimes output_path is actually sys.stdout, other times it is a path.
     try:
