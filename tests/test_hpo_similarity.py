@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import os
+import math
 import unittest
 
 from hpo_similarity.ontology import Ontology
@@ -60,7 +61,7 @@ class TestHpoSimilarityPy(unittest.TestCase):
         # check the max IC between different probands
         self.assertEqual(get_resnik_score(self.hpo_graph, p1, p2), 0)
         self.assertEqual(get_resnik_score(self.hpo_graph, p1, p3), 0)
-        self.assertEqual(get_resnik_score(self.hpo_graph, p2, p3), 0.916290731874155)
+        self.assertEqual(get_resnik_score(self.hpo_graph, p2, p3), -math.log(2/3.0))
         
         # check the simGIC between different probands
         self.assertEqual(get_simGIC_score(self.hpo_graph, p1, p3), 0)
@@ -72,13 +73,14 @@ class TestHpoSimilarityPy(unittest.TestCase):
         
         # check the default probands
         probands = list(self.hpo_terms.values())
-        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "resnik"), 0.916290731874155)
+        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "resnik"), -math.log(2/3.0))
         self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "simGIC"), 1.0)
         
         # add another proband, who has a rare term that matches a term in
         # another proband
         probands.append(["HP:0000924", "HP:0000118"])
-        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "resnik"), 2.525728644308255)
+        self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "resnik"),
+            -math.log(2/3.0) + -math.log(1/3.0))
         self.assertEqual(get_proband_similarity(self.hpo_graph, probands, "simGIC"), 3.0)
     
     def test_test_similarity(self):

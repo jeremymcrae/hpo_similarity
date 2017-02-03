@@ -53,14 +53,19 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         used in the probands match what is expected.
         """
         
-        self.assertEqual(self.hpo_graph.total_freq, 5)
+        print(self.hpo_graph.hpo_counts)
+        
+        self.assertEqual(self.hpo_graph.total_freq, 3)
         self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 2)
-        self.assertEqual(self.hpo_graph.hpo_counts["HP:0000118"], 1)
+        
+        # check that a redundant term has not been added, since a more specific
+        # descendant term was included
+        self.assertTrue('HP:0000118' not in self.hpo_graph.hpo_counts)
         
         # Check that we get an error if we look for counts of a term that was
         # not used in the probands.
         with self.assertRaises(KeyError):
-            self.assertEqual(self.hpo_graph.hpo_counts["HP:0000001"])
+            self.hpo_graph.hpo_counts["HP:0000001"]
     
     def test_add_hpo(self):
         """ check that HPO counting works correctly
@@ -69,26 +74,26 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         # check the baseline count for a term
         self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 2)
         
-        # add a term, and check that the count for the term increases, along
-        # with the total number of terms used
+        # add a term, and check that the count for the term increases, but
+        # the total frequency doesn't change
         self.hpo_graph.add_hpo("HP:0002011")
         self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 3)
-        self.assertEqual(self.hpo_graph.total_freq, 6)
+        self.assertEqual(self.hpo_graph.total_freq, 3)
         
         # check that if we try to add a term that isn't in the HPO ontology, we
         # don't increment any counts
         self.hpo_graph.add_hpo("unknown_term")
-        self.assertEqual(self.hpo_graph.total_freq, 6)
+        self.assertEqual(self.hpo_graph.total_freq, 3)
         
         # Check that if we add a term that currently doesn't have a tallied
-        # count then the term getes inserted correctly, and the counts increment
+        # count then the term gets inserted correctly, and the counts increment
         # appropriately.
         with self.assertRaises(KeyError):
             self.assertEqual(self.hpo_graph.hpo_counts["HP:0000001"])
         
         self.hpo_graph.add_hpo("HP:0000001")
         self.assertEqual(self.hpo_graph.hpo_counts["HP:0000001"], 1)
-        self.assertEqual(self.hpo_graph.total_freq, 7)
+        self.assertEqual(self.hpo_graph.total_freq, 3)
     
     def test_get_descendants(self):
         """ check that get_descendants works correctly

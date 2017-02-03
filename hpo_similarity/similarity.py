@@ -27,6 +27,8 @@ from __future__ import unicode_literals
 import math
 from networkx import DiGraph
 
+from hpo_similarity.check_proband_terms import check_terms_in_graph
+
 class CalculateSimilarity(DiGraph):
     """ calculate graph similarity scores
     """
@@ -47,10 +49,35 @@ class CalculateSimilarity(DiGraph):
             hpo_terms: dictionary of HPO terms for each individual
         """
         
+        check_terms_in_graph(self, hpo_terms)
+        
         for proband in hpo_terms:
-            child_terms = hpo_terms[proband]
+            child_terms = self.minimise_terms(hpo_terms[proband])
             for term in child_terms:
                 self.add_hpo(term)
+            
+            self.total_freq += 1
+    
+    def minimise_terms(self, terms):
+        ''' remove terms which are duplicated within a proband
+        
+        Probands can have duplicated terms, where they are labelled with a
+        specific term, as well as a more general term.
+        
+        Args:
+            terms: list of HPO terms
+        
+        Returns:
+            set of unique terms, where the most specific terms have been retained
+        '''
+        
+        good_terms = set([])
+        for term in terms:
+            ancestors = self.get_ancestors(term)
+            good_terms -= good_terms & ancestors
+            good_terms.add(term)
+        
+        return good_terms
     
     def add_hpo(self, term):
         """ increments the count for an HPO term
@@ -70,7 +97,6 @@ class CalculateSimilarity(DiGraph):
             self.hpo_counts[term] = 0
         
         self.hpo_counts[term] += 1
-        self.total_freq += 1
     
     def get_descendants(self, term):
         """ finds the set of subterms that descend from a top level HPO term

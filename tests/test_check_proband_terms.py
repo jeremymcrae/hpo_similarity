@@ -40,15 +40,26 @@ class TestCheckProbandTermsPy(unittest.TestCase):
         self.hpo_terms = {
             "person_01": ["HP:0000924"],
             "person_02": ["HP:0000118", "HP:0002011"],
-            "person_03": ["HP:0000707", "HP:0002011"],
-            "person_04": ["HP:0012759"]
+            "person_03": ["HP:0000707", "HP:0002011"]
         }
         
         self.hpo_graph.tally_hpo_terms(self.hpo_terms)
     
+    def test_check_tally_term_error(self):
+        ''' check we get an error if we tally a missing term
+        '''
+        
+        # add a term not in the graph
+        self.hpo_terms['person_04'] = ["HP:0012759"]
+        
+        with self.assertRaises(ValueError):
+            self.hpo_graph.tally_hpo_terms(self.hpo_terms)
+    
     def test_check_terms_in_graph(self):
         """ check that check_terms_in_graph works correctly
         """
+        
+        self.hpo_terms['person_04'] = ["HP:0012759"]
         
         # check that we raise an error when an indiviaul has a term that is not
         # present in the ontology grpah
