@@ -53,8 +53,6 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         used in the probands match what is expected.
         """
         
-        print(self.hpo_graph.hpo_counts)
-        
         self.assertEqual(self.hpo_graph.total_freq, 3)
         self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 2)
         
