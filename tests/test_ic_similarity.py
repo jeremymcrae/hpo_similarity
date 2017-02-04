@@ -81,7 +81,7 @@ class TestICSimilarityPy(unittest.TestCase):
         # which has some descendant nodes that need to be included in the term
         # count
         self.assertAlmostEqual(self.hpo_graph.calculate_information_content("HP:0000707"), \
-            -math.log(2/3))
+            -math.log(2/3.0))
         
     def test_get_most_informative_ic(self):
         """ check that get_most_informative_ic works correctly
@@ -95,7 +95,7 @@ class TestICSimilarityPy(unittest.TestCase):
         # check the most informative information content for two nodes where
         # both nodes are somewhat down the HPO graph
         self.assertAlmostEqual(self.hpo_graph.get_most_informative_ic("HP:0000707", \
-            "HP:0002011"), -math.log(2/3))
+            "HP:0002011"), -math.log(2/3.0))
             
         # check the most informative information content for two identical nodes
         self.assertAlmostEqual(self.hpo_graph.get_most_informative_ic("HP:0000924", \
