@@ -35,7 +35,7 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         
         path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
         ontology = Ontology(path)
-        self.hpo_graph = ontology.get_graph()
+        self.graph = ontology.get_graph()
         
         self.hpo_terms = {
             "person_01": ["HP:0000924"],
@@ -43,7 +43,7 @@ class TestCalculateSimilarityPy(unittest.TestCase):
             "person_03": ["HP:0000707", "HP:0002011"]
         }
         
-        self.hpo_graph.tally_hpo_terms(self.hpo_terms)
+        self.graph.tally_hpo_terms(self.hpo_terms)
         
     def test_setup(self):
         """ test that the class initialised correctly.
@@ -53,56 +53,68 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         used in the probands match what is expected.
         """
         
-        self.assertEqual(self.hpo_graph.total_freq, 3)
-        self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 2)
+        self.assertEqual(self.graph.total_freq, 3)
+        self.assertEqual(self.graph.get_ids_per_term("HP:0002011"),
+            {'person_02', 'person_03'} )
         
-        # check that a redundant term has not been added, since a more specific
+        # check that a redundant term has been added, even though a more specific
         # descendant term was included
-        self.assertTrue('HP:0000118' not in self.hpo_graph.hpo_counts)
+        self.assertTrue('HP:0000118' in self.graph._ids_per_term)
         
         # Check that we get an error if we look for counts of a term that was
         # not used in the probands.
         with self.assertRaises(KeyError):
-            self.hpo_graph.hpo_counts["HP:0000001"]
+            self.graph._ids_per_term["HP:0000001"]
+        
+        # but a similar check using the official method returns an empty set
+        self.assertEqual(self.graph.get_ids_per_term("HP:0000001"), set([]))
     
-    def test_add_hpo(self):
+    def test_add_proband_term(self):
         """ check that HPO counting works correctly
         """
         
         # check the baseline count for a term
-        self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 2)
+        self.assertEqual(self.graph.get_ids_per_term("HP:0002011"),
+            {'person_02', 'person_03'})
         
         # add a term, and check that the count for the term increases, but
         # the total frequency doesn't change
-        self.hpo_graph.add_hpo("HP:0002011")
-        self.assertEqual(self.hpo_graph.hpo_counts["HP:0002011"], 3)
-        self.assertEqual(self.hpo_graph.total_freq, 3)
+        self.graph.add_proband_term("HP:0002011", 'person_01')
+        self.assertEqual(self.graph.get_ids_per_term("HP:0002011"),
+            {'person_01', 'person_02', 'person_03'})
+        self.assertEqual(self.graph.total_freq, 3)
+        
+        # add a term for a proband which has already been included, and check
+        # that the count has not changed
+        self.graph.add_proband_term("HP:0002011", 'person_01')
+        self.assertEqual(self.graph.get_ids_per_term("HP:0002011"),
+            {'person_01', 'person_02', 'person_03'})
         
         # check that if we try to add a term that isn't in the HPO ontology, we
         # don't increment any counts
-        self.hpo_graph.add_hpo("unknown_term")
-        self.assertEqual(self.hpo_graph.total_freq, 3)
+        self.graph.add_proband_term("unknown_term", 'person_01')
+        self.assertEqual(self.graph.total_freq, 3)
         
         # Check that if we add a term that currently doesn't have a tallied
         # count then the term gets inserted correctly, and the counts increment
         # appropriately.
         with self.assertRaises(KeyError):
-            self.assertEqual(self.hpo_graph.hpo_counts["HP:0000001"])
+            self.assertEqual(self.graph._ids_per_term["HP:0000001"])
         
-        self.hpo_graph.add_hpo("HP:0000001")
-        self.assertEqual(self.hpo_graph.hpo_counts["HP:0000001"], 1)
-        self.assertEqual(self.hpo_graph.total_freq, 3)
+        self.graph.add_proband_term("HP:0000001", 'person_01')
+        self.assertEqual(self.graph.get_ids_per_term("HP:0000001"), {'person_01'})
+        self.assertEqual(self.graph.total_freq, 3)
     
     def test_get_descendants(self):
         """ check that get_descendants works correctly
         """
         
         # check that a high-level node returns the expected set of nodes
-        self.assertEqual(self.hpo_graph.get_descendants("HP:0000118"), \
+        self.assertEqual(self.graph.get_descendants("HP:0000118"), \
             set(['HP:0000707', 'HP:0002011', 'HP:0000924']))
         
         # check that a terminal node doesn't have any descendants
-        self.assertEqual(self.hpo_graph.get_descendants("HP:0000924"), \
+        self.assertEqual(self.graph.get_descendants("HP:0000924"), \
             set([]))
     
     def test_get_ancestors(self):
@@ -111,11 +123,11 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         
         # check that we get an appropriate set of ancestor tersm for a termina
         # node
-        self.assertEqual(self.hpo_graph.get_ancestors("HP:0000924"), \
+        self.assertEqual(self.graph.get_ancestors("HP:0000924"), \
             set(['HP:0000001', 'HP:0000118', 'HP:0000924']))
         
         # check that even the top node returns itself as a ancestor node
-        self.assertEqual(self.hpo_graph.get_ancestors("HP:0000001"), \
+        self.assertEqual(self.graph.get_ancestors("HP:0000001"), \
             set(['HP:0000001']))
     
     def test_find_common_ancestors(self):
@@ -124,14 +136,14 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         
         # check that two terms on different arms only return their common
         # ancestors
-        self.assertEqual(self.hpo_graph.find_common_ancestors('HP:0000924', \
+        self.assertEqual(self.graph.find_common_ancestors('HP:0000924', \
             'HP:0000707'), set(["HP:0000001", "HP:0000118"]))
         
         # check that two identical terms return their list of ancestors
-        self.assertEqual(self.hpo_graph.find_common_ancestors('HP:0000707', \
+        self.assertEqual(self.graph.find_common_ancestors('HP:0000707', \
             'HP:0000707'), set(["HP:0000001", "HP:0000118", "HP:0000707"]))
         
         # check that if one of the two terms is not in the HPO graqph, then we
         # return an empty set
-        self.assertEqual(self.hpo_graph.find_common_ancestors('HP:9999999', \
+        self.assertEqual(self.graph.find_common_ancestors('HP:9999999', \
             'HP:0000707'), set([]))

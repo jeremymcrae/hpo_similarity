@@ -36,8 +36,8 @@ class CalculateSimilarity(DiGraph):
     def __init__(self):
         self.descendant_cache = {}
         self.ancestor_cache = {}
-
-        self.hpo_counts = {}
+        
+        self._ids_per_term = {}
         self.total_freq = 0
         
         super(CalculateSimilarity, self).__init__()
@@ -52,51 +52,49 @@ class CalculateSimilarity(DiGraph):
         check_terms_in_graph(self, hpo_terms)
         
         for proband in hpo_terms:
-            child_terms = self.minimise_terms(hpo_terms[proband])
+            child_terms = hpo_terms[proband]
             for term in child_terms:
-                self.add_hpo(term)
+                self.add_proband_term(term, proband)
             
             self.total_freq += 1
     
-    def minimise_terms(self, terms):
-        ''' remove terms which are duplicated within a proband
+    def get_ids_per_term(self, term):
+        ''' pull out the sample IDs annotated with a specific term
         
-        Probands can have duplicated terms, where they are labelled with a
-        specific term, as well as a more general term.
+        NOTE: this doesn't identify all of the individuals with ancestral terms,
+        just the sparse set of sample IDs with that specific term.
         
         Args:
-            terms: list of HPO terms
+            term: HPO term
         
         Returns:
-            set of unique terms, where the most specific terms have been retained
+            set of sample IDs for individiuals with a specific term
         '''
         
-        good_terms = set([])
-        for term in terms:
-            ancestors = self.get_ancestors(term)
-            good_terms -= good_terms & ancestors
-            good_terms.add(term)
+        if term not in self._ids_per_term:
+            return set([])
         
-        return good_terms
+        return self._ids_per_term[term]
     
-    def add_hpo(self, term):
-        """ increments the count for an HPO term
+    def add_proband_term(self, term, proband):
+        """ adds a proband to the list of probands for an HPO term
         
-        This increments a) the count for the specific term, and b) the total
-        count of all terms.
+        We need to keep track of which individuals had which terms. This allows
+        us to later count probands with that specific term, or an ancestral term
         
         Args:
             term: HPO term (e.g. "HP:0000001")
+            proband: sample ID for an individual
         """
         
-        if term not in self.hpo_counts:
+        if term not in self._ids_per_term:
             # don't use terms which cannot be placed on the graph
             if not self.has_node(term):
                 return
             
-            self.hpo_counts[term] = 0
+            self._ids_per_term[term] = set([])
         
-        self.hpo_counts[term] += 1
+        self._ids_per_term[term].add(proband)
     
     def get_descendants(self, term):
         """ finds the set of subterms that descend from a top level HPO term
@@ -243,14 +241,12 @@ class ICSimilarity(CalculateSimilarity):
             
             descendants = self.get_descendants(term)
             
-            count = 0
-            if term in self.hpo_counts:
-                count += self.hpo_counts[term]
+            sample_ids = set([])
+            sample_ids |= self.get_ids_per_term(term)
             for subterm in descendants:
-                if subterm in self.hpo_counts:
-                    count += self.hpo_counts[subterm]
+                sample_ids |= self.get_ids_per_term(subterm)
             
             # cache the count, so we only have to calculate this once
-            self.counts_cache[term] = count
+            self.counts_cache[term] = len(sample_ids)
         
         return self.counts_cache[term]
