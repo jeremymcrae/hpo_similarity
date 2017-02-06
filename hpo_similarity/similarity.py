@@ -37,7 +37,6 @@ class CalculateSimilarity(DiGraph):
         self.descendant_cache = {}
         self.ancestor_cache = {}
         
-        self._ids_per_term = {}
         self.total_freq = 0
         
         super(CalculateSimilarity, self).__init__()
@@ -71,10 +70,10 @@ class CalculateSimilarity(DiGraph):
             set of sample IDs for individiuals with a specific term
         '''
         
-        if term not in self._ids_per_term:
+        if 'sample_ids' not in self.node[term]:
             return set([])
         
-        return self._ids_per_term[term]
+        return self.node[term]['sample_ids']
     
     def add_proband_term(self, term, proband):
         """ adds a proband to the list of probands for an HPO term
@@ -87,14 +86,13 @@ class CalculateSimilarity(DiGraph):
             proband: sample ID for an individual
         """
         
-        if term not in self._ids_per_term:
-            # don't use terms which cannot be placed on the graph
-            if not self.has_node(term):
-                return
-            
-            self._ids_per_term[term] = set([])
+        if term not in self:
+            return
         
-        self._ids_per_term[term].add(proband)
+        if 'sample_ids' not in self.node[term]:
+            self.node[term]['sample_ids'] = set([])
+        
+        self.node[term]['sample_ids'].add(proband)
     
     def get_descendants(self, term):
         """ finds the set of subterms that descend from a top level HPO term
@@ -166,9 +164,7 @@ class ICSimilarity(CalculateSimilarity):
     """ calculate similarity by IC score
     """
     
-    counts_cache = {}
-    ic_cache = {}
-    most_informative_cache = {}
+    most_informative = {}
     
     def __init__(self):
         
@@ -188,7 +184,7 @@ class ICSimilarity(CalculateSimilarity):
         
         terms = (term_1, term_2)
         
-        if terms not in self.most_informative_cache:
+        if terms not in self.most_informative:
             
             ancestors = self.find_common_ancestors(term_1, term_2)
             ic_values = [self.calculate_information_content(x) for x in ancestors]
@@ -196,10 +192,10 @@ class ICSimilarity(CalculateSimilarity):
             # cache the most informative IC value, so we only compute this once
             # per pair of HPO terms.
             most_informative = max(ic_values)
-            self.most_informative_cache[terms] = most_informative
-            self.most_informative_cache[(term_2, term_1)] = most_informative
+            self.most_informative[terms] = most_informative
+            self.most_informative[(term_2, term_1)] = most_informative
         
-        return self.most_informative_cache[terms]
+        return self.most_informative[terms]
     
     def calculate_information_content(self, term):
         """ calculates the information content for an hpo term
@@ -214,16 +210,16 @@ class ICSimilarity(CalculateSimilarity):
             the information content value for a single hpo term
         """
         
-        if term not in self.ic_cache:
+        if term not in self:
+            return 0
+        
+        if 'info_content' not in self.node[term]:
             term_count = self.get_term_count(term)
             
-            if term not in self:
-                return 0
-            
             # cache the IC, so we don't have to recalculate for the term
-            self.ic_cache[term] = -math.log(term_count/self.total_freq)
+            self.node[term]['info_content'] = -math.log(term_count/self.total_freq)
         
-        return self.ic_cache[term]
+        return self.node[term]['info_content']
     
     def get_term_count(self, term):
         """ Count how many times a term (or its subterms) was used.
@@ -235,10 +231,10 @@ class ICSimilarity(CalculateSimilarity):
             the number of times a term (or its subterms) was used.
         """
         
-        if term not in self.counts_cache:
-            if term not in self:
-                return 0
-            
+        if term not in self:
+            return 0
+        
+        if 'count' not in self.node[term]:
             descendants = self.get_descendants(term)
             
             sample_ids = set([])
@@ -247,6 +243,6 @@ class ICSimilarity(CalculateSimilarity):
                 sample_ids |= self.get_ids_per_term(subterm)
             
             # cache the count, so we only have to calculate this once
-            self.counts_cache[term] = len(sample_ids)
+            self.node[term]['count'] = len(sample_ids)
         
-        return self.counts_cache[term]
+        return self.node[term]['count']
