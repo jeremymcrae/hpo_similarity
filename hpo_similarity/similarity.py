@@ -235,11 +235,8 @@ class ICSimilarity(CalculateSimilarity):
             return 0
         
         if 'count' not in self.node[term]:
-            descendants = self.get_descendants(term)
-            
-            sample_ids = set([])
-            sample_ids |= self.get_ids_per_term(term)
-            for subterm in descendants:
+            sample_ids = self.get_ids_per_term(term)
+            for subterm in self.get_descendants(term):
                 sample_ids |= self.get_ids_per_term(subterm)
             
             # cache the count, so we only have to calculate this once
