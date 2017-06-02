@@ -29,9 +29,9 @@ def get_options():
         "probands in the DDD study.")
     parser.add_argument("--phenotypes", required=True, help="Path to table of" \
         "phenotypes per proband, including child HPO terms.")
-    parser.add_argument("--sample-ids", required=True, help="Path to file that"
+    parser.add_argument("--sample-ids", help="Path to file that"
         "maps between sample IDs for participants in the DDD study.")
-    parser.add_argument("--trios", required=True, help="Path to file that"
+    parser.add_argument("--trios", help="Path to file that"
         "defines the probands in exome-sequenced trios.")
     parser.add_argument("--out", required=True)
     
@@ -68,7 +68,7 @@ def prepare_participants_hpo_terms(pheno_path, alt_id_path, trio_path, output_pa
         child_terms = line[child_hpo_column]
         
         # don't use probands who lack HPO terms
-        if child_terms == "NA":
+        if child_terms == "NA" or child_terms == '' or child_terms == '-':
             continue
         
         # swap the proband across to the DDD ID if it exists
@@ -103,11 +103,18 @@ def load_alt_id_map(alt_id_path):
     
     alt_ids = {}
     
+    if alt_id_path is None:
+        return alt_ids
+    
     with open(alt_id_path) as handle:
+        header = handle.readline().strip().split('\t')
+        decipher_col = header.index('decipher_id')
+        ddd_col = header.index('person_stable_id')
+        
         for line in handle:
             line = line.split("\t")
-            ref_id = line[0]
-            alt_id = line[1]
+            ref_id = line[ddd_col]
+            alt_id = line[decipher_col]
             
             alt_ids[alt_id] = ref_id
     
