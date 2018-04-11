@@ -25,8 +25,8 @@ pip install hpo_similarity
 hpo_similarity --genes genes.json --phenotypes phenotypes.json
 ```
 The data directory on github includes example files, one with proband IDs
-per gene (![data/example_genes.json](data/example_genes.json)), and the other
-with HPO terms per proband (![data/example_phenotypes.json](data/example_phenotypes.json)).
+per gene ([data/example_genes.json](data/example_genes.json)), and the other
+with HPO terms per proband ([data/example_phenotypes.json](data/example_phenotypes.json)).
 
 Additional options:
 - `--output PATH` to send output gene and P-values to a file.
