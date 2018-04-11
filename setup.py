@@ -24,12 +24,13 @@ from setuptools import setup
 
 setup(
     name = "hpo_similarity",
-    version = "0.4.1",
+    version = "0.4.2",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description = ("Testing similarity of HPO terms between probands sharing \
         variants in genes."),
     long_description=io.open('README.md', encoding='utf-8').read(),
+    long_description_content_type="text/markdown",
     license = "MIT",
     packages=["hpo_similarity"],
     install_requires=['networkx >= 1.8.1',
