@@ -19,15 +19,17 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import io
 from setuptools import setup
 
 setup(
     name = "hpo_similarity",
-    version = "0.4.0",
+    version = "0.4.1",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description = ("Testing similarity of HPO terms between probands sharing \
         variants in genes."),
+    long_description=io.open('README.md', encoding='utf-8').read(),
     license = "MIT",
     packages=["hpo_similarity"],
     install_requires=['networkx >= 1.8.1',
