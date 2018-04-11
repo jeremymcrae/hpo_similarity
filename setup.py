@@ -38,5 +38,6 @@ setup(
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
     ],
+    entry_points={'console_scripts': ['hpo_similarity = hpo_similarity.__main__:main']},
     test_suite="tests"
 )

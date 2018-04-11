@@ -34,7 +34,7 @@ class Ontology(object):
     """ load a HPO obo file into a graph network for subsequent analysis
     """
     
-    def __init__(self, hpo_path):
+    def __init__(self, hpo_path=None):
         """ load the hpo file, and process it into a network
         """
         
