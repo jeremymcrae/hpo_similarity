@@ -24,7 +24,7 @@ from setuptools import setup
 
 setup(
     name = "hpo_similarity",
-    version = "0.4.2",
+    version = "0.4.3",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description = ("Testing similarity of HPO terms between probands sharing \
