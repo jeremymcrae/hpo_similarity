@@ -203,10 +203,10 @@ class TestOntologyPy(unittest.TestCase):
         self.assertEqual(graph.graph, HEADER)
         
         # check that the edges match what is expected foir each node
-        self.assertEqual(graph.edges('HP:0000001'), [("HP:0000001", "HP:0000118")])
+        self.assertEqual(list(graph.edges('HP:0000001')), [("HP:0000001", "HP:0000118")])
         self.assertEqual(set(graph.edges('HP:0000118')), \
             set([("HP:0000118", "HP:0000707"), ("HP:0000118", "HP:0000924")]))
-        self.assertEqual(graph.edges('HP:0000924'), [])
+        self.assertEqual(list(graph.edges('HP:0000924')), [])
         
         # check that, as part of setting the graph up, we have constructed the
         # correct set of obsolete IDs
