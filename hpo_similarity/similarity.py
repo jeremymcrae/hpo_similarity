@@ -166,10 +166,6 @@ class ICSimilarity(CalculateSimilarity):
     
     most_informative = {}
     
-    def __init__(self):
-        
-        super(ICSimilarity, self).__init__()
-    
     def get_most_informative_ic(self, term_1, term_2):
         """ calculate the information content between two HPO terms using the most informative common ancestor
         
