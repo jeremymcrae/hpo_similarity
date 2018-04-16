@@ -113,7 +113,7 @@ def add_entry(graph, entry, alt_ids, obsolete_ids):
     graph.add_node(node_id)
     
     # make sure we can convert between HPO ID and their alternate IDs
-    alt_ids = track_alt_ids(alt_ids, tags, node_id)
+    track_alt_ids(alt_ids, tags, node_id)
     
     # include the attribute data for the node
     add_hpo_attributes_to_node(graph, node_id, tags)
