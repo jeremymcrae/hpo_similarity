@@ -98,7 +98,7 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         # count then the term gets inserted correctly, and the counts increment
         # appropriately.
         with self.assertRaises(KeyError):
-            self.assertEqual(self.graph.node["HP:0000001"]['sample_ids'])
+            self.graph.node["HP:0000001"]['sample_ids']
         
         self.graph.add_proband_term("HP:0000001", 'person_01')
         self.assertEqual(self.graph.get_ids_per_term("HP:0000001"), {'person_01'})
