@@ -101,7 +101,7 @@ def main():
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
     hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, \
-        alt_node_ids, obsolete_ids)
+        alt_ids, obsolete_ids)
     probands_by_gene = load_genes(options.genes_path)
     
     if options.permute:
