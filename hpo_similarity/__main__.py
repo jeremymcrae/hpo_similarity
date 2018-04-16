@@ -34,13 +34,11 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import os
 import sys
 import argparse
 
 from hpo_similarity.load_files import load_participants_hpo_terms, load_genes
 from hpo_similarity.ontology import open_ontology
-from hpo_similarity.similarity import ICSimilarity
 from hpo_similarity.permute_probands import permute_probands
 from hpo_similarity.analyse_genes import analyse_genes
 
