@@ -24,7 +24,8 @@ import unittest
 
 import networkx
 
-from hpo_similarity.ontology import Ontology
+from hpo_similarity.ontology import (load_hpo_database, open_ontology,
+    track_alt_ids, add_hpo_attributes_to_node, is_obsolete, add_entry)
 from hpo_similarity.obo import Stanza, Value
 
 # define the header that will be parsed from the test obo dataset
@@ -75,32 +76,23 @@ HPO_LIST = [
 
 
 class TestOntologyPy(unittest.TestCase):
-    """ test the Ontology class
+    """ test the loading HPO ontology files
     """
     
     def setUp(self):
-        """ construct an Ontology object for unit tests
+        """ construct an networkx graph for unit tests
         """
         
-        path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
-        self.ontology = Ontology(path)
+        self.path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
     
     def test_setup(self):
-        """ test that the Ontology class has loaded the test obo file correctly
+        """ test that we have loaded the test obo file correctly
         """
         
-        self.assertEqual(self.ontology.hpo_header, HEADER)
-        self.assertEqual(self.ontology.hpo_list, HPO_LIST)
-    
-    def test_load_hpo_database(self):
-        """ check that load_hpo_database works (also in the class initialisation)
-        """
+        header, hpo_list = load_hpo_database(self.path)
         
-        path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
-        temp_header, temp_hpo = self.ontology.load_hpo_database(path)
-        
-        self.assertEqual(temp_header, HEADER)
-        self.assertEqual(temp_hpo, HPO_LIST)
+        self.assertEqual(header, HEADER)
+        self.assertEqual(hpo_list, HPO_LIST)
     
     def test_add_hpo_attributes_to_node(self):
         """ test that add_hpo_attributes_to_node works correctly
@@ -118,7 +110,7 @@ class TestOntologyPy(unittest.TestCase):
         graph = networkx.DiGraph()
         graph.add_node(node_id)
         
-        self.ontology.add_hpo_attributes_to_node(graph, node_id, tags)
+        add_hpo_attributes_to_node(graph, node_id, tags)
         
         self.assertEqual(set(graph.node[node_id].keys()), \
             set(["comment", "synonym", "name", "def", "is_a", "id"]))
@@ -135,6 +127,8 @@ class TestOntologyPy(unittest.TestCase):
         """ check that track_alt_ids works correctly
         """
         
+        alt_ids = {}
+        
         # construct a node without any alternate IDs
         node_id = "HP:0000118"
         tags = {'comment': [Value('This is the root of the phenotypic abnormality subontology of the HPO.', None)], \
@@ -144,11 +138,8 @@ class TestOntologyPy(unittest.TestCase):
             'id': [Value('HP:0000118', None)], \
             'def': [Value('A phenotypic abnormality.', ('[HPO:probinson]',))]}
         
-        # if we track the node, it shouldn't add anything to the empty ref_ids,
-        # or alt_ids
-        self.ontology.track_alt_ids(tags, node_id)
-        self.assertEqual(self.ontology.ref_ids, {})
-        self.assertEqual(self.ontology.alt_ids, {})
+        # if we track the node, it shouldn't add anything to the empty alt_ids
+        track_alt_ids(alt_ids, tags, node_id)
         
         # construct a node with some alternate IDs
         node_id = "HP:0000707"
@@ -162,37 +153,37 @@ class TestOntologyPy(unittest.TestCase):
             'def': [Value('An abnormality of the `nervous system` (FMA:7157).', ('[HPO:probinson]',))]}
         
         # now when we track the node, it should add in the alternate IDs
-        self.ontology.track_alt_ids(tags, node_id)
-        self.assertEqual(self.ontology.ref_ids, {node_id: ['HP:0001333', 'HP:0006987']})
-        self.assertEqual(self.ontology.alt_ids["HP:0001333"], node_id)
-        self.assertEqual(self.ontology.alt_ids["HP:0006987"], node_id)
+        track_alt_ids(alt_ids, tags, node_id)
+        self.assertEqual(alt_ids["HP:0001333"], node_id)
+        self.assertEqual(alt_ids["HP:0006987"], node_id)
     
     def test_is_obsolete(self):
         """ check that is_obsolete works correctly
         """
         
+        obsolete_ids = {}
         # check that some tags with a True is_obsolete entry is True
         tags = {'is_obsolete': [Value('true', None)], \
             'id': [Value('HP:0000489', None)], \
             'name': [Value('Abnormality of globe location or size', None)]}
-        self.assertTrue(self.ontology.is_obsolete(tags))
+        self.assertTrue(is_obsolete(tags))
         
         # check that some tags with a False is_obsolete entry is False
         tags = {'is_obsolete': [Value('false', None)], \
             'id': [Value('HP:0000489', None)], \
             'name': [Value('Abnormality of globe location or size', None)]}
-        self.assertFalse(self.ontology.is_obsolete(tags))
+        self.assertFalse(is_obsolete(tags))
         
         # check that some tags without an is_obsolete entry is False
         tags = {'id': [Value('HP:0000707', None)], \
             'name': [Value('Abnormality of the nervous system', None)]}
-        self.assertFalse(self.ontology.is_obsolete(tags))
+        self.assertFalse(is_obsolete(tags))
     
     def test_get_graph(self):
         """ test that building a graph with get_graph works correctly
         """
         
-        graph = self.ontology.get_graph()
+        graph, alt_ids, obsolete = open_ontology(self.path)
         
         # check that all the nodes (aside from the obsolete node) have been
         # included
@@ -210,4 +201,4 @@ class TestOntologyPy(unittest.TestCase):
         
         # check that, as part of setting the graph up, we have constructed the
         # correct set of obsolete IDs
-        self.assertEqual(self.ontology.obsolete_ids, set(["HP:0000489"]))
+        self.assertEqual(obsolete, set(["HP:0000489"]))

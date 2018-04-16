@@ -36,10 +36,9 @@ Additional options:
 You can also explore the HPO graph using the hpo_similarity package within
 python, for example:
 ```python
-from hpo_similarity import Ontology
+from hpo_similarity import open_ontology
 
-ontology = Ontology()
-graph = ontology.get_graph()
+graph, alt_ids, obsolete_ids = open_ontology()
 
 # find all descendant terms
 graph.get_descendants('HP:0001249')

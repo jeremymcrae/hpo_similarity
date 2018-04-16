@@ -23,7 +23,7 @@ import os
 import math
 import unittest
 
-from hpo_similarity.ontology import Ontology
+from hpo_similarity.ontology import open_ontology
 from hpo_similarity.similarity import ICSimilarity
 from hpo_similarity.get_scores import get_resnik_score, get_simGIC_score, \
     get_proband_similarity
@@ -38,8 +38,7 @@ class TestHpoSimilarityPy(unittest.TestCase):
         """
         
         path = os.path.join(os.path.dirname(__file__), "data", "obo.txt")
-        ontology = Ontology(path)
-        self.hpo_graph = ontology.get_graph()
+        self.hpo_graph, _, _ = open_ontology(path)
         
         self.hpo_terms = {
             "person_01": ["HP:0000924"],

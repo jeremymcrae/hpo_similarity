@@ -39,7 +39,7 @@ import sys
 import argparse
 
 from hpo_similarity.load_files import load_participants_hpo_terms, load_genes
-from hpo_similarity.ontology import Ontology
+from hpo_similarity.ontology import open_ontology
 from hpo_similarity.similarity import ICSimilarity
 from hpo_similarity.permute_probands import permute_probands
 from hpo_similarity.analyse_genes import analyse_genes
@@ -96,10 +96,7 @@ def main():
     options = get_options()
     
     # build a graph of HPO terms, so we can trace paths between terms
-    hpo_ontology = Ontology(options.ontology)
-    graph = hpo_ontology.get_graph()
-    alt_node_ids = hpo_ontology.get_alt_ids()
-    obsolete_ids = hpo_ontology.get_obsolete_ids()
+    graph, alt_ids, obsolete = open_ontology(options.ontology)
     
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
