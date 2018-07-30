@@ -124,7 +124,7 @@ def add_entry(graph, entry, alt_ids, obsolete_ids):
             predecessor = str(predecessor)
             graph.add_edge(predecessor, node_id)
 
-def open_ontology(path):
+def open_ontology(path=None):
     """ builds a networkx graph from obo parsed data
     
     Returns:
