@@ -24,7 +24,7 @@ from setuptools import setup
 
 setup(
     name = "hpo_similarity",
-    version = "0.5.1",
+    version = "0.5.2",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description = ("Testing similarity of HPO terms between probands sharing \
@@ -40,6 +40,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
     ],
+    python_requires='>3.5.0',
     entry_points={'console_scripts': ['hpo_similarity = hpo_similarity.__main__:main']},
     test_suite="tests"
 )
