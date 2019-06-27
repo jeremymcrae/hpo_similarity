@@ -63,7 +63,10 @@ def add_hpo_attributes_to_node(graph, node_id, obo_tags):
     """
     
     for key in obo_tags:
-        graph.node[node_id][key] = str(obo_tags[key][0])
+        if len(obo_tags[key]) > 1:
+            graph.node[node_id][key] = [str(ot) for ot in obo_tags[key]]
+        else:
+            graph.node[node_id][key] = str(obo_tags[key][0])
 
 def is_obsolete(obo_tags):
     """ checks if an "is_obsolete" flag is in the tags for an obo entry
