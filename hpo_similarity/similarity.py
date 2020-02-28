@@ -70,10 +70,10 @@ class CalculateSimilarity(DiGraph):
             set of sample IDs for individiuals with a specific term
         '''
         
-        if 'sample_ids' not in self.node[term]:
+        if 'sample_ids' not in self.nodes[term]:
             return set([])
         
-        return self.node[term]['sample_ids']
+        return self.nodes[term]['sample_ids']
     
     def add_proband_term(self, term, proband):
         """ adds a proband to the list of probands for an HPO term
@@ -89,10 +89,10 @@ class CalculateSimilarity(DiGraph):
         if term not in self:
             return
         
-        if 'sample_ids' not in self.node[term]:
-            self.node[term]['sample_ids'] = set([])
+        if 'sample_ids' not in self.nodes[term]:
+            self.nodes[term]['sample_ids'] = set([])
         
-        self.node[term]['sample_ids'].add(proband)
+        self.nodes[term]['sample_ids'].add(proband)
     
     def get_descendants(self, term):
         """ finds the set of subterms that descend from a top level HPO term
@@ -209,13 +209,13 @@ class ICSimilarity(CalculateSimilarity):
         if term not in self:
             return 0
         
-        if 'info_content' not in self.node[term]:
+        if 'info_content' not in self.nodes[term]:
             term_count = self.get_term_count(term)
             
             # cache the IC, so we don't have to recalculate for the term
-            self.node[term]['info_content'] = -math.log(term_count/self.total_freq)
+            self.nodes[term]['info_content'] = -math.log(term_count/self.total_freq)
         
-        return self.node[term]['info_content']
+        return self.nodes[term]['info_content']
     
     def get_term_count(self, term):
         """ Count how many times a term (or its subterms) was used.
@@ -230,12 +230,12 @@ class ICSimilarity(CalculateSimilarity):
         if term not in self:
             return 0
         
-        if 'count' not in self.node[term]:
+        if 'count' not in self.nodes[term]:
             sample_ids = self.get_ids_per_term(term)
             for subterm in self.get_descendants(term):
                 sample_ids |= self.get_ids_per_term(subterm)
             
             # cache the count, so we only have to calculate this once
-            self.node[term]['count'] = len(sample_ids)
+            self.nodes[term]['count'] = len(sample_ids)
         
-        return self.node[term]['count']
+        return self.nodes[term]['count']

@@ -112,16 +112,16 @@ class TestOntologyPy(unittest.TestCase):
         
         add_hpo_attributes_to_node(graph, node_id, tags)
         
-        self.assertEqual(set(graph.node[node_id].keys()), \
+        self.assertEqual(set(graph.nodes[node_id].keys()), \
             set(["comment", "synonym", "name", "def", "is_a", "id"]))
         
-        self.assertEqual(graph.node[node_id]["comment"], \
+        self.assertEqual(graph.nodes[node_id]["comment"], \
             "This is the root of the phenotypic abnormality subontology of the HPO.")
-        self.assertEqual(graph.node[node_id]["synonym"], "Organ abnormality")
-        self.assertEqual(graph.node[node_id]["name"], "Phenotypic abnormality")
-        self.assertEqual(graph.node[node_id]["def"], "A phenotypic abnormality.")
-        self.assertEqual(graph.node[node_id]["is_a"], "HP:0000001")
-        self.assertEqual(graph.node[node_id]["id"], "HP:0000118")
+        self.assertEqual(graph.nodes[node_id]["synonym"], "Organ abnormality")
+        self.assertEqual(graph.nodes[node_id]["name"], "Phenotypic abnormality")
+        self.assertEqual(graph.nodes[node_id]["def"], "A phenotypic abnormality.")
+        self.assertEqual(graph.nodes[node_id]["is_a"], "HP:0000001")
+        self.assertEqual(graph.nodes[node_id]["id"], "HP:0000118")
     
     def test_track_alt_ids(self):
         """ check that track_alt_ids works correctly

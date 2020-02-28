@@ -58,12 +58,12 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         
         # check that a redundant term has been added, even though a more specific
         # descendant term was included
-        self.assertTrue('sample_ids' in self.graph.node['HP:0000118'])
+        self.assertTrue('sample_ids' in self.graph.nodes['HP:0000118'])
         
         # Check that we get an error if we look for probands with a term that was
         # not used in the probands.
         with self.assertRaises(KeyError):
-            self.graph.node["HP:0000001"]['sample_ids']
+            self.graph.nodes["HP:0000001"]['sample_ids']
         
         # but a similar check using the official method returns an empty set
         self.assertEqual(self.graph.get_ids_per_term("HP:0000001"), set([]))
@@ -98,7 +98,7 @@ class TestCalculateSimilarityPy(unittest.TestCase):
         # count then the term gets inserted correctly, and the counts increment
         # appropriately.
         with self.assertRaises(KeyError):
-            self.graph.node["HP:0000001"]['sample_ids']
+            self.graph.nodes["HP:0000001"]['sample_ids']
         
         self.graph.add_proband_term("HP:0000001", 'person_01')
         self.assertEqual(self.graph.get_ids_per_term("HP:0000001"), {'person_01'})

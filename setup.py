@@ -24,7 +24,7 @@ from setuptools import setup
 
 setup(
     name = "hpo_similarity",
-    version = "0.5.2",
+    version = "0.5.3",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description = ("Testing similarity of HPO terms between probands sharing \
@@ -33,7 +33,7 @@ setup(
     long_description_content_type="text/markdown",
     license = "MIT",
     packages=["hpo_similarity"],
-    install_requires=['networkx >= 1.8.1',
+    install_requires=['networkx >= 2.0',
     ],
     package_data={"hpo_similarity": ['data/hp.obo']},
     classifiers=[
