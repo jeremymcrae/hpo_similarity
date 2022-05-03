@@ -21,13 +21,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import json
 
-def load_participants_hpo_terms(path, alt_ids, obsolete):
+def load_participants_hpo_terms(path, alt_ids, obsolete, use_alt_id_if_hpo_term_obsolete=False):
     """ loads patient HPO terms
     
     Args:
         path: path to JSON-encoded patient phenotype file.
         alt_ids: dict to map HPO terms from their alt_id, to their current ID
         obsolete: set of obsolete HPO IDs
+        use_alt_id_if_hpo_term_obsolete: retain terms that are obsolete if they're also in alt_ids
     
     Returns:
         dictionary of HPO term lists indexed by proband ID e.g. {DDD01:
@@ -44,6 +45,8 @@ def load_participants_hpo_terms(path, alt_ids, obsolete):
         # strip out the obsolete terms, currently there are two probands (out of
         # >4000) who each have an obsolete term, so it's not worth converting the
         # obsolete terms to a more appropriate term
+        if use_alt_id_if_hpo_term_obsolete:
+            obsolete -= set(alt_ids.keys())
         terms = [term for term in terms if term not in obsolete]
         
         # convert each term to it's standard HPO ID if the term is in the HPO IDs,
