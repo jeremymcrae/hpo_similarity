@@ -33,7 +33,7 @@ jobs:
         hpo_similarity --genes data/example_genes.json --phenotypes data/example_phenotypes.json
     - name: Coveralls
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.github_token }}
       run: |
         python -m coverage run --source=./ -m unittest discover
-        coveralls
+        coveralls --service=github
