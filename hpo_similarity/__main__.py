@@ -65,6 +65,9 @@ def get_options():
     parser.add_argument("--iterations", type=int, default=100000,
         help="whether to permute the probands across genes, in order to assess \
             method robustness.")
+    parser.add_argument("--use-alt-id-if-hpo-term-obsolete", default=False, action="store_true",
+        help="map HPO terms to the standard id even if the term is labeled obsolete.")
+
     
     # allow for using different similarity scoring metrics
     group = parser.add_mutually_exclusive_group()
@@ -99,7 +102,7 @@ def main():
     # load HPO terms and probands for each gene
     print("loading HPO terms and probands by gene")
     hpo_by_proband = load_participants_hpo_terms(options.phenotypes_path, \
-        alt_ids, obsolete)
+        alt_ids, obsolete, options.use_alt_id_hpo_term_obsolete)
     probands_by_gene = load_genes(options.genes_path)
     
     if options.permute:
